@@ -6,6 +6,9 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 
 ## Next
+
+- [x] Published as public github.com/pmarreck/ai_edu after removing private details; full local history kept in backup branches (done 2026-10-09 17:07 EDT)
+- [ ] Add Mechatron Prime CI (the project's continuous-integration service) for the flake check
 - [ ] Dogfood: BDFN learns king-and-pawn endgames (opposition, square of the pawn, key squares), served on the tailnet
 	- [x] Day-7 check gains a starting-rank square item, solver-verified (done 2026-09-30 11:35 EDT)
 	- [x] Move items: solver-generated refutation for each wrong move, revealed only for the move played (done 2026-09-30 12:05 EDT; deployed 12:07)
@@ -25,7 +28,6 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 	- [ ] "Try it": play your own idea against the solver on the board (no AI needed; works for the child)
 	- [ ] "Talk it over" tutor panel grounded in solver facts: typed for BDFN first, voice for the child after reading and audio/retention decisions; cannot change scores
 	- [x] Evidence check on planted errors; revisions accepted with both directions from the start (done 2026-09-30 12:45 EDT)
-	- [x] Client looks fine on UWQHD and iPhone per BDFN (done 2026-09-30 11:27 EDT)
 	- [ ] Web-first (BDFN, 2026-09-28 18:16 EDT; supersedes terminal-first): thin fixed client, LuaJIT server, proves the whole stack
 	- [ ] LLM drafts lessons and items ahead; verified, frozen, versioned; deterministic scoring, rubric-only LLM judging of free text
 	- [ ] About a week: 3 short lessons days 0-2, unaided check after each, delayed retrieval around day 7, one transfer item

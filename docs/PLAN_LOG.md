@@ -23,3 +23,7 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Next] Cache the KPK solve across spec files: specs 8 s -> 3.1 s (done 2026-09-28 23:18 EDT, 86de4c7)
 - [x] [Next] Client shows question n of m (done 2026-09-28 23:21 EDT, 9b6238a)
 - [x] [Next] answer.scored payload contract enforced at the log boundary; BDFN's 21-event log still validates (done 2026-09-28 23:29 EDT)
+
+## Retired 2026-10-09
+
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Client looks fine on UWQHD and iPhone per BDFN (done 2026-09-30 11:27 EDT)
