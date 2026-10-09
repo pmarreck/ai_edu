@@ -1,0 +1,78 @@
+#!/usr/bin/env luajit
+-- Fetch an independent oracle sample for the KPK solver from the lichess Syzygy tablebase API.
+-- Writes tests/fixtures/kpk_lichess.lua. Run rarely; the fixture is committed so tests stay offline.
+local cjson = require("cjson")
+
+local SAMPLE_SIZE = tonumber(arg[1]) or 300
+local SEED = 20260928
+local API = "https://tablebase.lichess.ovh/standard?fen="
+
+local state = SEED
+local function rand(n) state = (state * 48271) % 2147483647; return state % n end
+
+local function file(sq) return sq % 8 end
+local function rank(sq) return math.floor(sq / 8) end
+local function name(sq) return string.char(97 + file(sq)) .. (rank(sq) + 1) end
+local function adjacent(a, b) return math.abs(file(a) - file(b)) <= 1 and math.abs(rank(a) - rank(b)) <= 1 end
+local function pawn_attacks(p, sq)
+	return rank(sq) == rank(p) + 1 and math.abs(file(sq) - file(p)) == 1
+end
+
+local function fen(wk, bk, p, stm)
+	local board = {}
+	for r = 7, 0, -1 do
+		local row, empty = {}, 0
+		for f = 0, 7 do
+			local sq, piece = r * 8 + f, nil
+			if sq == wk then piece = "K" elseif sq == bk then piece = "k" elseif sq == p then piece = "P" end
+			if piece then
+				if empty > 0 then row[#row + 1] = tostring(empty); empty = 0 end
+				row[#row + 1] = piece
+			else empty = empty + 1 end
+		end
+		if empty > 0 then row[#row + 1] = tostring(empty) end
+		board[#board + 1] = table.concat(row)
+	end
+	return table.concat(board, "/") .. " " .. stm .. " - - 0 1"
+end
+
+local out, seen = {}, {}
+while #out < SAMPLE_SIZE do
+	local p = 8 + rand(48)
+	local near = rand(2) == 0
+	local wk, bk = rand(64), rand(64)
+	if near then
+		wk = math.max(0, math.min(63, p + (rand(5) - 2) * 8 + rand(5) - 2))
+		bk = math.max(0, math.min(63, p + (rand(7) - 1) * 8 + rand(5) - 2))
+	end
+	local stm = rand(2) == 0 and "w" or "b"
+	local key = wk .. ":" .. bk .. ":" .. p .. ":" .. stm
+	local legal = wk ~= bk and wk ~= p and bk ~= p and not adjacent(wk, bk)
+		and not (stm == "w" and pawn_attacks(p, bk))
+	if legal and not seen[key] then
+		seen[key] = true
+		local url = API .. fen(wk, bk, p, stm):gsub(" ", "_")
+		local handle = assert(io.popen("curl -sf '" .. url .. "'"))
+		local body = handle:read("*a"); handle:close()
+		local ok, res = pcall(cjson.decode, body)
+		if ok and type(res) == "table" and res.category then
+			-- Normalize to the white-perspective game-theoretic value, ignoring the 50-move rule.
+			local c = res.category
+			local white_wins = (stm == "w" and (c == "win" or c == "cursed-win"))
+				or (stm == "b" and (c == "loss" or c == "blessed-loss"))
+			out[#out + 1] = string.format("\t{ wk = %q, bk = %q, p = %q, stm = %q, value = %q },",
+				name(wk), name(bk), name(p), stm == "w" and "white" or "black", white_wins and "win" or "draw")
+			io.stderr:write(string.format("\r%d/%d", #out, SAMPLE_SIZE))
+		else
+			io.stderr:write("\nskipped " .. url .. "\n")
+		end
+		os.execute("sleep 0.15")
+	end
+end
+io.stderr:write("\n")
+local f = assert(io.open("tests/fixtures/kpk_lichess.lua", "wb"))
+f:write("-- Independent oracle: lichess Syzygy tablebase (" .. API .. "), fetched "
+	.. os.date("!%Y-%m-%d") .. " by tools/fetch-kpk-fixtures, seed " .. SEED .. ".\n")
+f:write("-- value is the game-theoretic result for White, ignoring the 50-move rule.\nreturn {\n")
+f:write(table.concat(out, "\n"), "\n}\n")
+f:close()

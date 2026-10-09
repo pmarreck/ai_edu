@@ -1,0 +1,25 @@
+# PLAN log
+
+Completed PLAN.md items retired by plan-retire, oldest retirement first.
+
+## Retired 2026-09-28
+
+- [x] [Now] 2026-09-28 EDT: Preserve and verify the founding prompt without changing its source copy.
+- [x] [Now] 2026-09-28 EDT: Verify the LuaJIT flake and project test gate on Linux; keep macOS evaluation available.
+- [x] [Now] Specify the smallest vendor-independent architecture and versioned contract list (done 2026-09-28 14:50 EDT, eb391e4)
+- [x] [Now] Switch ./test to busted; nix flake check runs it (done 2026-09-28 14:50 EDT, eb391e4)
+- [x] [Now] event/1 contract with exhaustively tested actor/type matrix (LLM roles emit proposals only) (done 2026-09-28 14:51 EDT, 40a8fed)
+- [x] [Now] Append-only event log with canonical NDJSON round-trip (done 2026-09-28 14:51 EDT, f5e5af0)
+
+## Retired 2026-09-30
+
+- [x] [Now] learner-projection/1 deterministic replay with mutation-checked metamorphic specs (done 2026-09-28 14:53 EDT, 869e5e0)
+- [x] [Now] Review current learning-science evidence (docs/evidence/EVIDENCE_2026-09-28.md; 5 DOIs spot-checked via Crossref) (done 2026-09-28 14:59 EDT)
+- [x] [Next] Amend the 2.3 priors as docs/policy/PEDAGOGY_PRIORS.md (pedagogy-priors/2; BDFN approved) (done 2026-09-28 17:45 EDT)
+- [x] [Next] Recurring full evidence review every 4-6 months written into policy; next due 2027-02-28 (done 2026-09-28 17:45 EDT)
+- [x] [Next] Early literacy, numeracy and child-ASR review (docs/evidence/EARLY_LITERACY_NUMERACY_2026-09-28.md; 8 DOIs spot-checked) (done 2026-09-28 18:02 EDT)
+- [x] [Next] Browser-free simulated learner driving the real HTTP API (done 2026-09-28 18:40 EDT)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, sq…] Served at a private network address and notified BDFN (done 2026-09-28 18:50 EDT)
+- [x] [Next] Cache the KPK solve across spec files: specs 8 s -> 3.1 s (done 2026-09-28 23:18 EDT, 86de4c7)
+- [x] [Next] Client shows question n of m (done 2026-09-28 23:21 EDT, 9b6238a)
+- [x] [Next] answer.scored payload contract enforced at the log boundary; BDFN's 21-event log still validates (done 2026-09-28 23:29 EDT)

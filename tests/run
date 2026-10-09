@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Inner suite runner used by the Nix check (and for fast red/green loops in nix develop).
+# Verification goes through ../test, which runs this inside the sandboxed flake check.
+set -u
+cd "$(dirname "$0")/.."
+failures=0
+busted "$@" || failures=$((failures + 1))
+for cli_test in tests/cli/*; do
+	[[ -x $cli_test ]] || continue
+	if ! bash "$cli_test"; then
+		printf 'CLI test failed: %s\n' "$cli_test" >&2
+		failures=$((failures + 1))
+	fi
+done
+exit "$failures"

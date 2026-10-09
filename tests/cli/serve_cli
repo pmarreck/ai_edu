@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# CLI surface tests for ./serve (help, about, argument errors). Exit code = failure count.
+set -u
+cd "$(dirname "$0")/../.."
+failures=0
+fail() { printf 'FAIL: %s\n' "$1" >&2; failures=$((failures + 1)); }
+
+out=$(bash ./serve --help 2>&1); rc=$?
+[[ $rc -eq 0 && $out == *"Usage: serve"* && $out == *"--port"* ]] || fail "--help (rc=$rc)"
+out=$(bash ./serve -h 2>&1); [[ $? -eq 0 && $out == *"Usage: serve"* ]] || fail "-h"
+out=$(bash ./serve --about 2>&1); rc=$?
+lines=$(printf '%s\n' "$out" | wc -l)
+[[ $rc -eq 0 && $lines -eq 1 && $out == *"ai_edu serve"* ]] || fail "--about one line (rc=$rc, lines=$lines)"
+out=$(bash ./serve --bogus 2>&1); rc=$?
+[[ $rc -eq 2 && $out == *"unknown argument --bogus"* ]] || fail "unknown arg (rc=$rc)"
+out=$(bash ./serve --port 2>&1); rc=$?
+[[ $rc -eq 2 && $out == *"--port needs a value"* ]] || fail "missing value (rc=$rc)"
+out=$(bash ./serve --port nope 2>&1); rc=$?
+[[ $rc -eq 2 && $out == *"must be a number"* ]] || fail "non-numeric port (rc=$rc)"
+exit "$failures"

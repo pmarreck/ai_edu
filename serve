@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Start the ai_edu web app (see --help). Runs luajit directly inside the project environment
+# (nix develop, or the flake check), otherwise enters the flake's environment first.
+cd "$(dirname "$0")"
+run=(luajit -e 'package.path = "src/?.lua;src/?/init.lua;" .. package.path' src/ai_edu/main.lua "$@")
+if [[ -n ${IN_NIX_SHELL:-} || -n ${AI_EDU_IN_ENV:-} ]]; then
+	exec "${run[@]}"
+fi
+exec nix develop -c "${run[@]}"

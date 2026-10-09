@@ -1,0 +1,10 @@
+return {
+	default = {
+		ROOT = { "tests" },
+		pattern = "_spec",
+		lpath = "src/?.lua;src/?/init.lua",
+		output = "utfTerminal",
+		-- Load modules once per run: the KPK solve is immutable and costs about 2 s per load.
+		["auto-insulate"] = false,
+	},
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Single verification path: builds the flake's sandboxed check, which runs tests/run (all specs
+# and CLI tests). A cached result means this exact source already passed. Exit code = nix's.
+set -u
+cd "$(dirname "$0")"
+# Nix only sees files git knows about; an un-added file would silently escape verification.
+untracked=$(git ls-files --others --exclude-standard -- src tests content web tools serve test flake.nix flake.lock .busted)
+if [[ -n $untracked ]]; then
+	printf 'These files are invisible to the Nix check until you git add them:\n%s\n' "$untracked" >&2
+	exit 1
+fi
+system=$(nix eval --impure --raw --expr builtins.currentSystem)
+exec nix build --no-link --print-build-logs ".#checks.${system}.tests"
