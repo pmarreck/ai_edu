@@ -4,7 +4,7 @@ Policy version: `evidence-policy/1`
 Review date: 2026-09-28
 Reviewer: Claude (agent), for the ai_edu meta-prompt sections 2.2, 2.3 and 21, and PLAN item "Research early literacy and numeracy for a 5-year-old pre-reader, plus child speech recognition".
 
-Learner context: a US native English speaker of about 5, not yet reading. Goals: letters, letter sounds, short words and onward; basic number skills; possibly a system that listens to the child speak.
+Learner context: a young US native English speaker, not yet reading. Goals: letters, letter sounds, short words and onward; basic number skills; possibly a system that listens to the child speak.
 
 Method: For each topic, searched for systematic reviews and meta-analyses first, then RCTs and large field studies. Abstracts were read from primary indexes (OpenAlex, Europe PMC, ERIC API, Semantic Scholar, arXiv). DOIs were checked against Crossref for title, authors, year and venue, except where noted under "Unverified / not found". A number is recorded only if it appeared in a primary abstract or full text that was retrieved. Figures seen only in search snippets, press coverage or blogs are left out and listed as unverified.
 

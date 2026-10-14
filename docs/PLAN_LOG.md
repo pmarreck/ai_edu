@@ -27,3 +27,12 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 ## Retired 2026-10-09
 
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Client looks fine on UWQHD and iPhone per BDFN (done 2026-09-30 11:27 EDT)
+
+## Retired 2026-10-14
+
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Day-7 check gains a starting-rank square item, solver-verified (done 2026-09-30 11:35 EDT)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Move items: solver-generated refutation for each wrong move, revealed only for the move played (done 2026-09-30 12:05 EDT; deployed 12:07)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Resume an in-progress lesson after a server restart; deployed (done 2026-09-30 12:07 EDT, 8f7bed1)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] random 0.3.0 LuaJIT DRBG pinned as a flake input; ai_edu.rng now draws from it (done 2026-09-30 15:05 EDT)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Solver-generated, concept-verified fresh positions per KPK concept, kept distinct between concepts (done 2026-09-30 13:35 EDT)
+- [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Evidence check on planted errors; revisions accepted with both directions from the start (done 2026-09-30 12:45 EDT)
