@@ -1,0 +1,2 @@
+# Full test suite (busted specs and CLI tests) built in the Nix sandbox; the same check ./test runs.
+checks.x86_64-linux.tests

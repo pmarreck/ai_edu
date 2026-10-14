@@ -4,11 +4,12 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Now
 
-- [ ] Add Mechatron Prime CI (the project's continuous-integration service) for the flake check, with README badge
+- [ ] Challenges: solver-settled; upheld = answer.corrected + "caught an error" skill credit, rejected = proof shown, never a penalty (BDFN 2026-09-30)
+
+- [x] Add Mechatron Prime CI (the project's continuous-integration service) for the flake check, with README badge (done 2026-10-14 14:32 EDT)
 
 ## Next: king-and-pawn dogfood
 
-- [ ] Challenges: solver-settled; upheld = answer.corrected + "caught an error" skill credit, rejected = proof shown, never a penalty (BDFN 2026-09-30)
 - [ ] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice
 - [ ] Counterfeits and scrutiny axis, design agreed 2026-09-30 (context: docs/plan_context/counterfeit_scrutiny.md)
 - [ ] Misconception loop: deterministic signals + evaluator AI propose (misconception.proposed), engine confirms via diagnostic items or a short learner dialog, confirmed ones steer reviews
