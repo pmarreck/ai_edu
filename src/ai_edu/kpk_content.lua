@@ -120,6 +120,52 @@ builders.key_square = function(solved, card)
 		board = { p = card.pawn } }
 end
 
+local VALUE_TEXT = { win = "a win for White", draw = "a draw" }
+
+-- Independent verdicts per ask, computed from the position alone; never reads item.key.
+local judges = {}
+
+judges.result = function(solved, it, answer)
+	local v = solved:value(it.prompt.board)
+	if not v or type(answer.choice) ~= "string" then return nil, "choice answer required" end
+	return { correct = answer.choice == v, proof = "With best play this position is " .. VALUE_TEXT[v] .. "." }
+end
+
+judges.stop = function(solved, it, answer)
+	local v = solved:value(it.prompt.board)
+	if not v or (answer.choice ~= "yes" and answer.choice ~= "no") then return nil, "yes or no answer required" end
+	return { correct = (answer.choice == "yes") == (v == "draw"), proof = "With best play this position is " .. VALUE_TEXT[v] .. "." }
+end
+
+judges.best_move = function(solved, it, answer)
+	local board = it.prompt.board
+	for _, m in ipairs(type(answer.move) == "string" and solved:moves(board) or {}) do
+		if m.from .. m.to == answer.move then
+			if m.value == "win" then
+				return { correct = true, proof = "After " .. san(answer.move, board.wk) .. ", White keeps the win." }
+			end
+			return { correct = false, proof = refutation(solved, board, answer.move).text }
+		end
+	end
+	return nil, "legal move answer required"
+end
+
+judges.key_square = function(solved, it, answer)
+	local pawn = it.prompt.board.p
+	if type(answer.choice) ~= "string" or not answer.choice:match("^[a-h][1-8]$") then return nil, "square answer required" end
+	local yes = is_key_square(solved, pawn, answer.choice)
+	return { correct = yes, proof = answer.choice .. (yes and " is" or " is not") .. " a key square for the pawn on " .. pawn .. "." }
+end
+
+-- Settle a challenge: the solver's verdict on a learner's answer, as { correct, proof }, or nil
+-- plus a reason. Reads only the position and the ask recorded in item.oracle, so a wrong stored
+-- key is exposed instead of defended (docs/policy/ORACLES.md).
+function kpk_content.judge(solved, it, answer)
+	local judge = it.oracle and it.oracle.name == "kpk-solver" and judges[it.oracle.ask]
+	if not judge then return nil, "no kpk-solver oracle for item " .. tostring(it.id) end
+	return judge(solved, it, answer)
+end
+
 kpk_content.is_key_square = is_key_square
 
 -- authored: { {id, title, day, skill, cards = {...}} }. Returns lessons with items, or nil, reason.
@@ -137,6 +183,7 @@ function kpk_content.build(solved, authored)
 				prompt = { text = card.text, board = built.board or card.board },
 				response = built.response, key = built.key, feedback = card.feedback, phase = card.phase,
 				provenance = { policy_version = POLICY_VERSION, author = AUTHOR, key_source = "kpk-solver" },
+				oracle = { name = "kpk-solver", ask = card.ask },
 			}
 		end
 		lessons[#lessons + 1] = { id = l.id, title = l.title, day = l.day, items = items }

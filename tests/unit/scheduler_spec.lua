@@ -12,7 +12,7 @@ local function log_of(sessions)
 		local t = T0 + s[1] * DAY
 		for i, a in ipairs(s[3]) do
 			add({ type = "answer.submitted", learner_id = "L", occurred_at = t + i, payload = { item_id = "i" .. i, session_id = s[2] } })
-			add({ type = "answer.scored", learner_id = "L", occurred_at = t + i,
+			add({ id = s[2] .. ":" .. i, type = "answer.scored", learner_id = "L", occurred_at = t + i,
 				payload = { item_id = "i" .. i, skill_id = a[1], correct = a[2], hint_level = a[3] or 0 } })
 		end
 	end
@@ -79,5 +79,18 @@ describe("scheduler (ladder model)", function()
 		local events = log_of({ { 0, "S1", { { "a", true }, { "a", true } } }, { 1, "S2", { { "a", false } } } })
 		local canonical = require("ai_edu.canonical")
 		assert.equal(canonical.encode(scheduler.replay(events)), canonical.encode(scheduler.replay(events)))
+	end)
+end)
+
+describe("scheduler corrections", function()
+	it("an upheld challenge's answer.corrected replaces the score it names, even after the session closed", function()
+		local events = log_of({ { 0, "S1", { { "sq", true }, { "sq", false } } } })
+		local before = scheduler.replay(events)
+		assert.equal(0, before.learners.L.skills.sq.rung)
+		events[#events + 1] = { seq = #events + 1, type = "answer.corrected", learner_id = "L", occurred_at = T0 + 5 * DAY,
+			payload = { item_id = "i2", skill_id = "sq", correct = true, was_correct = false, hint_level = 0, corrects = "S1:2" } }
+		local after = scheduler.replay(events)
+		assert.equal(1, after.learners.L.skills.sq.rung)
+		assert.equal(1, due_days(after, "sq"))
 	end)
 end)

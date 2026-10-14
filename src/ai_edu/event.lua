@@ -19,7 +19,7 @@ local TYPES_BY_ACTOR_KIND = {
 		"session.started", "activity.presented", "hint.given", "answer.scored",
 		"observation.accepted", "observation.rejected", "misconception.confirmed",
 		"break.offered", "break.started", "break.ended", "artifact.fallback_used",
-		"lesson.completed", "retrieval.scheduled",
+		"lesson.completed", "retrieval.scheduled", "challenge.settled", "answer.corrected",
 	}),
 	parent = set({ "annotation.added" }),
 	llm = set({ "lesson.planned", "tutor.response", "misconception.proposed", "observation.proposed" }),
@@ -44,13 +44,30 @@ end
 local function nonempty_string(s) return type(s) == "string" and s ~= "" end
 
 -- Payload contracts for event types that change canonical learner state.
+local function score_error(p)
+	if not nonempty_string(p.item_id) then return "payload.item_id must be a non-empty string" end
+	if not nonempty_string(p.skill_id) then return "payload.skill_id must be a non-empty string" end
+	if type(p.correct) ~= "boolean" then return "payload.correct must be a boolean" end
+	local h = p.hint_level
+	if type(h) ~= "number" or h < 0 or h ~= math.floor(h) then return "payload.hint_level must be a non-negative integer" end
+end
+
 local PAYLOAD_CHECKS = {
-	["answer.scored"] = function(p)
+	["answer.scored"] = score_error,
+	-- An upheld challenge reverses one earlier answer.scored event, named by its id.
+	["answer.corrected"] = function(p)
+		local err = score_error(p)
+		if err then return err end
+		if not nonempty_string(p.corrects) then return "payload.corrects must name the corrected answer.scored event" end
+		if type(p.was_correct) ~= "boolean" or p.was_correct == p.correct then
+			return "payload.was_correct must be the opposite boolean of payload.correct"
+		end
+	end,
+	["challenge.settled"] = function(p)
 		if not nonempty_string(p.item_id) then return "payload.item_id must be a non-empty string" end
-		if not nonempty_string(p.skill_id) then return "payload.skill_id must be a non-empty string" end
-		if type(p.correct) ~= "boolean" then return "payload.correct must be a boolean" end
-		local h = p.hint_level
-		if type(h) ~= "number" or h < 0 or h ~= math.floor(h) then return "payload.hint_level must be a non-negative integer" end
+		if type(p.upheld) ~= "boolean" then return "payload.upheld must be a boolean" end
+		if not nonempty_string(p.oracle) then return "payload.oracle must be a non-empty string" end
+		if type(p.proof) ~= "string" then return "payload.proof must be a string" end
 	end,
 }
 

@@ -83,16 +83,26 @@ routes["/api/report"] = function(self, req)
 	if not self.session then return no_session() end
 	local body = decode_object(req.body)
 	if not body then return json(400, { error = "expected {kind, item_id, note}" }) end
+	if body.kind == "wrong" and self.oracle then
+		local st, events, ruling = session.challenge(self.session, body.item_id, body.note, self.oracle.judge,
+			self.oracle, self.clock())
+		if st then
+			self:_commit(st, events)
+			return json(200, { ok = true, settled = ruling })
+		end
+	end
 	local st, events = session.report(self.session, body.kind, body.item_id, body.note, self.clock())
 	if not st then return json(400, { error = events }) end
 	self:_commit(st, events)
 	return json(200, { ok = true })
 end
 
--- opts: course (course.define result), log, clock (ms), static = { [path] = { type, body } }.
+-- opts: course (course.define result), log, clock (ms), static = { [path] = { type, body } },
+-- oracle (optional) = { name, judge = function(item, answer) } that settles "I think you're wrong";
+-- a challenge it cannot judge is logged for human review instead.
 -- After a restart the learner's unfinished lesson is resumed from the log.
 function http_app.new(opts)
-	return setmetatable({ course = opts.course, log = opts.log, clock = opts.clock, static = opts.static,
+	return setmetatable({ course = opts.course, log = opts.log, clock = opts.clock, static = opts.static, oracle = opts.oracle,
 		session = course.resume(opts.course, opts.log:events()) }, App)
 end
 

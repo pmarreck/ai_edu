@@ -89,3 +89,67 @@ describe("kpk_content refutations", function()
 		assert.is_nil(item.reveal(it, { move = "e5d5" }).refutation)
 	end)
 end)
+
+describe("kpk_content.judge", function()
+	local lessons = assert(kpk_content.build(solved, dofile("content/kpk_week.lua")))
+
+	-- Every answer a learner could give: each choice, or each legal move.
+	local function answers(it)
+		local out = {}
+		if it.response.kind == "choice" then
+			for _, c in ipairs(it.response.choices) do out[#out + 1] = { choice = c.id } end
+		elseif it.response.kind == "move" then
+			for _, m in ipairs(it.response.legal_moves) do out[#out + 1] = { move = m } end
+		end
+		return out
+	end
+
+	it("agrees with the stored key on every possible answer to every item in the week", function()
+		local judged = 0
+		for _, l in ipairs(lessons) do
+			for _, it in ipairs(l.items) do
+				for _, a in ipairs(answers(it)) do
+					local verdict = assert(kpk_content.judge(solved, it, a))
+					assert.equal(item.score(it, a).correct, verdict.correct, it.id)
+					assert.is_string(verdict.proof)
+					judged = judged + 1
+				end
+			end
+		end
+		assert.is_true(judged > 60)
+	end)
+
+	it("ignores the stored key, so a corrupted key is exposed", function()
+		local it
+		for _, l in ipairs(lessons) do
+			for _, x in ipairs(l.items) do
+				if not it and x.response.kind == "move" then it = x end
+			end
+		end
+		local wrong
+		for _, m in ipairs(it.response.legal_moves) do
+			if it.key.accepted[1] ~= m and not wrong then wrong = m end
+		end
+		local tampered = {}
+		for k, v in pairs(it) do tampered[k] = v end
+		tampered.key = { accepted = { wrong }, refutations = {} }
+		assert.is_true(item.score(tampered, { move = wrong }).correct)
+		assert.is_false(assert(kpk_content.judge(solved, tampered, { move = wrong })).correct)
+	end)
+
+	it("explains a losing move with Black's saving reply", function()
+		local m = assert(build({ { id = "m", ask = "best_move", board = { wk = "e5", p = "d4", bk = "d7", stm = "white" }, text = "?" } }))[1].items[1]
+		local v = assert(kpk_content.judge(solved, m, { move = "d4d5" }))
+		assert.is_false(v.correct)
+		assert.matches("Black holds the draw", v.proof)
+		assert.matches("keeps the win", assert(kpk_content.judge(solved, m, { move = "e5d5" })).proof)
+	end)
+
+	it("refuses items it has no oracle for and malformed answers", function()
+		local info = { schema = "item/1", id = "i", response = { kind = "info" } }
+		assert.is_nil(kpk_content.judge(solved, info, { ack = true }))
+		local m = assert(build({ { id = "m", ask = "best_move", board = { wk = "e5", p = "d4", bk = "d7", stm = "white" }, text = "?" } }))[1].items[1]
+		assert.is_nil(kpk_content.judge(solved, m, { move = "a1a2" }))
+		assert.is_nil(kpk_content.judge(solved, m, { choice = "win" }))
+	end)
+end)

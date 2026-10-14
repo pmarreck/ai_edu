@@ -38,19 +38,40 @@ local function scored_skill(old, payload, occurred_at)
 	return skill
 end
 
+-- The skill record after an upheld challenge reverses one earlier score: one correct count moves
+-- in that attempt's bucket. Attempts are unchanged, and so is last_independent_success_at,
+-- which reflects scored events only.
+local function corrected_skill(old, payload)
+	if not old then return nil, "no scored attempt to correct" end
+	local skill = shallow(old)
+	local which = payload.hint_level == 0 and "independent" or "assisted"
+	local bucket = shallow(old[which])
+	bucket.correct = bucket.correct + (payload.correct and 1 or -1)
+	if bucket.correct < 0 or bucket.correct > bucket.attempts then return nil, "correction out of range" end
+	skill[which] = bucket
+	return skill
+end
+
 -- Fold one logged event into a NEW projection (structural sharing: only the changed learner
 -- and skill path is copied), or return nil plus a reason. Any hint (hint_level > 0) makes the
 -- attempt assisted: assisted success is not independent mastery.
 -- complexity: O(learners + skills of that learner) per scored event.
 function projection.step(proj, e)
 	local out = { schema = proj.schema, last_seq = e.seq, learners = proj.learners }
-	if e.type == "answer.scored" then
+	if e.type == "answer.scored" or e.type == "answer.corrected" then
 		local err = scored_payload_error(e.payload)
 		if err then return nil, string.format("seq %d: %s", e.seq, err) end
 		local learners = shallow(proj.learners)
 		local learner = shallow(learners[e.learner_id])
 		learner.skills = shallow(learner.skills)
-		learner.skills[e.payload.skill_id] = scored_skill(learner.skills[e.payload.skill_id], e.payload, e.occurred_at)
+		local old, skill = learner.skills[e.payload.skill_id]
+		if e.type == "answer.scored" then
+			skill = scored_skill(old, e.payload, e.occurred_at)
+		else
+			skill, err = corrected_skill(old, e.payload)
+			if not skill then return nil, string.format("seq %d: %s", e.seq, err) end
+		end
+		learner.skills[e.payload.skill_id] = skill
 		learners[e.learner_id] = learner
 		out.learners = learners
 	end

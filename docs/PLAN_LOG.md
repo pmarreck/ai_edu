@@ -36,3 +36,4 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] random 0.3.0 LuaJIT DRBG pinned as a flake input; ai_edu.rng now draws from it (done 2026-09-30 15:05 EDT)
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Solver-generated, concept-verified fresh positions per KPK concept, kept distinct between concepts (done 2026-09-30 13:35 EDT)
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Evidence check on planted errors; revisions accepted with both directions from the start (done 2026-09-30 12:45 EDT)
+- [x] [Recently done] Scheduler core and review sessions from due skills with logged plans (done 2026-09-30 13:45 EDT)

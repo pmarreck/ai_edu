@@ -61,3 +61,63 @@ describe("king-and-pawn lesson, simulated over HTTP", function()
 		end
 	end)
 end)
+
+describe("king-and-pawn challenges settled by the solver", function()
+	local ORACLE = { name = "kpk-solver", judge = function(it, a) return kpk_content.judge(kpk.shared(), it, a) end }
+
+	-- Run a lesson in-process, answering the first move item with a losing move, then challenge it.
+	-- tamper(lessons) may corrupt a stored key first, standing in for a grading error.
+	local function challenge_first_move(tamper)
+		local lessons = assert(kpk_content.build(kpk.shared(), dofile("content/kpk_week.lua")))
+		if tamper then tamper(lessons) end
+		for _, l in ipairs(lessons) do l.day = 0 end -- unlock every lesson; calendar gating is tested elsewhere
+		local log, t = event_log.new(), 0
+		local app = http_app.new({ log = log, static = {}, oracle = ORACLE, clock = function() t = t + 1000; return t end,
+			course = course.define({ lessons = lessons, learner_id = "sim", policy_version = "p", day_index = function() return 0 end }) })
+		local function post(path, v) return cjson.decode(app:handle({ method = "POST", path = path, body = cjson.encode(v or {}) }).body) end
+		assert(post("/api/start", { lesson_id = "opposition" }).lesson_id)
+		while true do
+			local it = assert(post("/api/next").item, "lesson has no move item")
+			if it.response.kind == "move" then
+				local move = it.response.legal_moves[1]
+				for _, m in ipairs(it.response.legal_moves) do
+					if not kpk_content.judge(kpk.shared(), { oracle = { name = "kpk-solver", ask = "best_move" }, prompt = it.prompt }, { move = m }).correct then move = m end
+				end
+				local scored = post("/api/submit", { item_id = it.id, answer = { move = move }, modality = "tap", hint_level = 0 })
+				return scored, post("/api/report", { kind = "wrong", item_id = it.id, note = "" }), log
+			end
+			local answer = it.response.kind == "info" and { ack = true } or { choice = it.response.choices[1].id }
+			post("/api/submit", { item_id = it.id, answer = answer, modality = "tap", hint_level = 0 })
+		end
+	end
+
+	it("rejects a challenge to a correctly graded losing move, with Black's saving reply as proof", function()
+		local scored, res = challenge_first_move()
+		assert.is_false(scored.correct)
+		assert.is_false(res.settled.upheld)
+		assert.matches("Black holds the draw", res.settled.proof)
+	end)
+
+	it("upholds a challenge when the stored key is corrupted, and the projection follows the oracle", function()
+		local function tamper(lessons)
+			for _, l in ipairs(lessons) do
+				if l.id == "opposition" then
+					for _, it in ipairs(l.items) do
+						if it.response.kind == "move" then it.key = { accepted = it.response.legal_moves, refutations = {} }; return end
+					end
+				end
+			end
+		end
+		local scored, res, log = challenge_first_move(tamper)
+		assert.is_true(scored.correct)
+		assert.is_true(res.settled.upheld)
+		assert.is_false(res.settled.correct)
+		local p = assert(projection.replay(log:events()))
+		for _, s in pairs(p.learners.sim.skills) do
+			assert.is_true(s.independent.correct <= s.independent.attempts)
+		end
+		local corrected = 0
+		for _, e in ipairs(log:events()) do if e.type == "answer.corrected" then corrected = corrected + 1 end end
+		assert.equal(1, corrected)
+	end)
+end)

@@ -15,9 +15,9 @@ local function card(id) return { schema = "item/1", id = id, skill_ids = { "s" }
 local STATIC = { ["/"] = { type = "text/html; charset=utf-8", body = "<!doctype html>" },
 	["/app.js"] = { type = "text/javascript", body = "// app" } }
 
-local function make(log, lessons)
+local function make(log, lessons, oracle)
 	local t = 0
-	return http_app.new({ log = log, static = STATIC, clock = function() t = t + 1000; return t end,
+	return http_app.new({ log = log, static = STATIC, oracle = oracle, clock = function() t = t + 1000; return t end,
 		course = course.define({ learner_id = "learner", policy_version = "p", day_index = function() return 0 end,
 			lessons = lessons or { { id = "L1", title = "One", day = 0, items = { CHOICE } },
 				{ id = "L2", title = "Two", day = 1, items = { card("c") } } } }) })
@@ -115,5 +115,40 @@ describe("http_app (imperative shell)", function()
 		local res = post(rebooted, "/api/next")
 		assert.equal(200, res.status)
 		assert.equal("b", json(res).item.id)
+	end)
+end)
+
+describe("http_app challenges", function()
+	-- Stand-in oracle that says "d" is right, so a challenge to a "d" answer is upheld.
+	local ORACLE = { name = "test-oracle", judge = function(_, answer) return { correct = answer.choice == "d", proof = "d it is." } end }
+
+	local function answered(log, oracle, choice)
+		local a = make(log, nil, oracle)
+		post(a, "/api/start", { lesson_id = "L1" })
+		post(a, "/api/next")
+		post(a, "/api/submit", { item_id = "b-sound", answer = { choice = choice }, modality = "tap", hint_level = 0 })
+		return a
+	end
+
+	it("settles a 'wrong' report with the oracle and returns the ruling", function()
+		local log = event_log.new()
+		local a = answered(log, ORACLE, "d")
+		local res = post(a, "/api/report", { kind = "wrong", item_id = "b-sound", note = "d is right" })
+		assert.equal(200, res.status)
+		assert.same({ ok = true, settled = { upheld = true, correct = true, proof = "d it is." } }, json(res))
+		local types = {}
+		for _, e in ipairs(log:events()) do types[#types + 1] = e.type end
+		assert.same({ "challenge.raised", "challenge.settled", "answer.corrected" }, { types[#types - 2], types[#types - 1], types[#types] })
+	end)
+
+	it("logs an unsettleable challenge for review when there is no oracle verdict", function()
+		local no_verdict = { name = "none", judge = function() return nil, "no oracle" end }
+		for _, oracle in ipairs({ no_verdict, false }) do
+			local log = event_log.new()
+			local res = post(answered(log, oracle or nil, "d"), "/api/report", { kind = "wrong", item_id = "b-sound" })
+			assert.same({ ok = true }, json(res))
+			local events = log:events()
+			assert.equal("challenge.raised", events[#events].type)
+		end
 	end)
 end)

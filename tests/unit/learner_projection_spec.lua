@@ -114,3 +114,29 @@ describe("learner_projection.step purity", function()
 		assert.equal(31, after.last_seq)
 	end)
 end)
+
+describe("learner_projection corrections", function()
+	local function corrected(id, t, target, correct, hint_level)
+		return fx.event({ id = id, actor = "engine", type = "answer.corrected", occurred_at = t,
+			payload = { item_id = "item-" .. target, skill_id = "carrying", correct = correct, was_correct = not correct,
+				hint_level = hint_level, corrects = target } })
+	end
+
+	it("moves one correct count in the bucket of the corrected attempt, leaving attempts alone", function()
+		local p = projection.replay(logged({
+			scored("a", 100, "carrying", false, 0),
+			scored("b", 200, "carrying", true, 2),
+			corrected("c", 300, "a", true, 0),
+			corrected("d", 400, "b", false, 2),
+		}))
+		local s = p.learners.L1.skills.carrying
+		assert.same({ attempts = 1, correct = 1 }, s.independent)
+		assert.same({ attempts = 1, correct = 0 }, s.assisted)
+	end)
+
+	it("rejects a correction for a skill with no scored attempts", function()
+		local p, err = projection.replay(logged({ corrected("c", 300, "a", true, 0) }))
+		assert.is_nil(p)
+		assert.matches("no scored attempt", err)
+	end)
+end)

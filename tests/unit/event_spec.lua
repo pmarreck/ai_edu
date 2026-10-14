@@ -10,10 +10,16 @@ local ENGINE = {
 	"session.started", "activity.presented", "hint.given", "answer.scored",
 	"observation.accepted", "observation.rejected", "misconception.confirmed",
 	"break.offered", "break.started", "break.ended", "artifact.fallback_used",
-	"lesson.completed", "retrieval.scheduled",
+	"lesson.completed", "retrieval.scheduled", "challenge.settled", "answer.corrected",
 }
 local PARENT = { "annotation.added" }
 local LLM = { "lesson.planned", "tutor.response", "misconception.proposed", "observation.proposed" }
+local CORRECTED = { item_id = "i", skill_id = "s", correct = true, was_correct = false, hint_level = 0, corrects = "s1:7" }
+local VALID_PAYLOADS = {
+	["answer.scored"] = { item_id = "i", skill_id = "s", correct = true, hint_level = 0 },
+	["answer.corrected"] = CORRECTED,
+	["challenge.settled"] = { item_id = "i", upheld = false, oracle = "kpk-solver", proof = "p" },
+}
 local LLM_ROLES = { "planner", "tutor", "evaluator", "verifier", "research" }
 
 local function valid_event(overrides)
@@ -48,14 +54,14 @@ describe("event.validate", function()
 		for _, a in ipairs(actors) do
 			for _, t in ipairs(types) do
 				checked = checked + 1
-				local payload = t == "answer.scored" and { item_id = "i", skill_id = "s", correct = true, hint_level = 0 } or {}
+				local payload = VALID_PAYLOADS[t] or {}
 				local ok = event.validate(valid_event({ actor = a, type = t, payload = payload })) == true
 				if ok ~= (allowed[a .. "|" .. t] == true) then
 					mismatches[#mismatches + 1] = a .. "|" .. t .. " -> " .. tostring(ok)
 				end
 			end
 		end
-		assert.equal(12 * 28, checked)
+		assert.equal(12 * 30, checked)
 		assert.same({}, mismatches)
 	end)
 
@@ -118,6 +124,40 @@ describe("event.validate answer.scored payload", function()
 		for name, c in pairs(cases) do
 			expected[name] = c[2]
 			got[name] = event.validate(scored(c[1])) == true
+		end
+		assert.same(expected, got)
+	end)
+end)
+
+describe("event.validate challenge settlement payloads", function()
+	local function with(t, changes)
+		local p = {}
+		for k, v in pairs(VALID_PAYLOADS[t]) do p[k] = v end
+		for k, v in pairs(changes) do if v == "nil" then p[k] = nil else p[k] = v end end
+		return valid_event({ actor = "engine", type = t, payload = p })
+	end
+
+	it("classifies answer.corrected and challenge.settled payloads exactly", function()
+		local cases = {
+			corrected_good = { with("answer.corrected", {}), true },
+			corrected_assisted = { with("answer.corrected", { hint_level = 2 }), true },
+			corrected_no_target = { with("answer.corrected", { corrects = "nil" }), false },
+			corrected_empty_target = { with("answer.corrected", { corrects = "" }), false },
+			corrected_no_was = { with("answer.corrected", { was_correct = "nil" }), false },
+			corrected_no_change = { with("answer.corrected", { was_correct = true }), false },
+			corrected_no_skill = { with("answer.corrected", { skill_id = "nil" }), false },
+			corrected_bad_hint = { with("answer.corrected", { hint_level = -1 }), false },
+			settled_good = { with("challenge.settled", {}), true },
+			settled_upheld = { with("challenge.settled", { upheld = true }), true },
+			settled_no_upheld = { with("challenge.settled", { upheld = "nil" }), false },
+			settled_no_oracle = { with("challenge.settled", { oracle = "" }), false },
+			settled_no_item = { with("challenge.settled", { item_id = "nil" }), false },
+			settled_no_proof = { with("challenge.settled", { proof = "nil" }), false },
+		}
+		local expected, got = {}, {}
+		for name, c in pairs(cases) do
+			expected[name] = c[2]
+			got[name] = event.validate(c[1]) == true
 		end
 		assert.same(expected, got)
 	end)

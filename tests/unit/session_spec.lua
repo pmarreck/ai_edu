@@ -191,3 +191,65 @@ describe("session.restore", function()
 		for _, e in ipairs(events) do assert(log:append(e)) end
 	end)
 end)
+
+describe("session.challenge", function()
+	-- Oracle stand-ins: one agrees with the stored key, one says "d" is the sound of /b/.
+	local function agrees(it, answer) return { correct = answer.choice == "b", proof = "b says /b/." } end
+	local function disagrees(it, answer) return { correct = answer.choice == "d", proof = "the oracle says d." } end
+	local oracle = { name = "test-oracle" }
+
+	local function answered(choice, log)
+		local st, ev = session.present(init(), "b-sound", 1)
+		if log then commit(log, st, ev) end
+		local st2, ev2 = session.submit(st, "b-sound", { choice = choice }, TAP, 2)
+		if log then commit(log, st2, ev2) end
+		return st2
+	end
+
+	it("settles a challenge against the oracle; a rejected one shows proof and changes no score", function()
+		local st = answered("d")
+		local st2, events, out = assert(session.challenge(st, "b-sound", "d sounds right to me", agrees, oracle, 3))
+		assert.same({ "challenge.raised", "challenge.settled" }, { events[1].type, events[2].type })
+		assert.same({ "learner", "engine" }, { events[1].actor, events[2].actor })
+		assert.same({ item_id = "b-sound", upheld = false, oracle = "test-oracle", proof = "b says /b/.", session_id = "S1" },
+			events[2].payload)
+		assert.same({ upheld = false, correct = false, proof = "b says /b/." }, out)
+		assert.is_not.equal(st, st2)
+	end)
+
+	it("an upheld challenge corrects the named score in both directions and is then settled", function()
+		local log = event_log.new()
+		local st = answered("b", log)
+		local st2, events, out = assert(session.challenge(st, "b-sound", "", disagrees, oracle, 3))
+		commit(log, st2, events)
+		assert.same({ upheld = true, correct = false, proof = "the oracle says d." }, out)
+		local corr = events[3]
+		assert.same({ "answer.corrected", "engine" }, { corr.type, corr.actor })
+		assert.same({ item_id = "b-sound", skill_id = "letters.b", correct = false, was_correct = true, hint_level = 0,
+			corrects = "S1:3" }, corr.payload)
+		local p = assert(projection.replay(log:events()))
+		assert.same({ attempts = 1, correct = 0 }, p.learners.L1.skills["letters.b"].independent)
+		local _, again, out2 = assert(session.challenge(st2, "b-sound", "", disagrees, oracle, 4))
+		assert.is_false(out2.upheld)
+		assert.equal(2, #again)
+	end)
+
+	it("refuses unanswered items and items the oracle cannot judge, emitting nothing", function()
+		local st = session.present(init(), "b-sound", 1)
+		assert.is_nil(session.challenge(st, "b-sound", "", agrees, oracle, 2))
+		local function no_oracle() return nil, "no oracle" end
+		local st2, err = session.challenge(answered("d"), "b-sound", "", no_oracle, oracle, 3)
+		assert.is_nil(st2)
+		assert.matches("no oracle", err)
+	end)
+
+	it("survives a restart: restore recovers the answer, score ids and earlier corrections", function()
+		local log = event_log.new()
+		local st = answered("b", log)
+		commit(log, st, select(2, session.challenge(st, "b-sound", "", disagrees, oracle, 3)))
+		local restored = session.restore(init(), log:events())
+		local _, events, out = assert(session.challenge(restored, "b-sound", "", disagrees, oracle, 4))
+		assert.is_false(out.upheld)
+		assert.equal("S1:7", events[1].id)
+	end)
+end)

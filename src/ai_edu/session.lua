@@ -111,7 +111,45 @@ function session.submit(st, item_id, answer, meta, now)
 		out = { correct = result.correct, reveal = item.reveal(it, answer) }
 	end
 	local events, counter = make_events(st, now, specs)
+	local record = { ack = result.ack, answer = answer, correct = result.correct, hint_level = h, scored = {} }
+	for _, e in ipairs(events) do
+		if e.type == "answer.scored" then record.scored[#record.scored + 1] = { id = e.id, skill_id = e.payload.skill_id } end
+	end
+	answered[item_id] = record
 	return successor(st, { open = open, answered = answered, counter = counter }), events, out
+end
+
+-- "I think you're wrong", settled by an oracle instead of the stored key: judge(item, answer)
+-- returns { correct, proof } or nil plus a reason. When the oracle disagrees with the logged score
+-- the challenge is upheld and each score event is reversed by an answer.corrected naming it.
+-- Works in both directions (wrong marked right too). Returns state, events, { upheld, correct,
+-- proof }, or nil plus a reason with no events, so the shell can fall back to a plain report.
+function session.challenge(st, item_id, note, judge, oracle, now)
+	local rec = st.answered[item_id]
+	if not rec or rec.ack or rec.correct == nil then return nil, "item " .. tostring(item_id) .. " has no scored answer" end
+	local verdict, err = judge(st.items[item_id], rec.answer)
+	if not verdict then return nil, err end
+	local upheld = verdict.correct ~= rec.correct
+	local specs = {
+		{ "learner", "challenge.raised", { kind = "wrong", item_id = item_id, session_id = st.session_id,
+			note = type(note) == "string" and note or "" } },
+		{ "engine", "challenge.settled", { item_id = item_id, session_id = st.session_id, upheld = upheld,
+			oracle = oracle.name, proof = verdict.proof } },
+	}
+	local answered = st.answered
+	if upheld then
+		for _, sc in ipairs(rec.scored) do
+			specs[#specs + 1] = { "engine", "answer.corrected", { item_id = item_id, skill_id = sc.skill_id,
+				correct = verdict.correct, was_correct = rec.correct, hint_level = rec.hint_level, corrects = sc.id } }
+		end
+		local fixed = copy(rec)
+		fixed.correct = verdict.correct
+		answered = copy(st.answered)
+		answered[item_id] = fixed
+	end
+	local events, counter = make_events(st, now, specs)
+	return successor(st, { answered = answered, counter = counter }), events,
+		{ upheld = upheld, correct = verdict.correct, proof = verdict.proof }
 end
 
 function session.report(st, kind, item_id, note, now)
@@ -130,11 +168,23 @@ function session.restore(st, events)
 	for _, e in ipairs(events) do
 		local n = e.id:sub(1, #prefix) == prefix and tonumber(e.id:sub(#prefix + 1))
 		if n and n > counter then counter = n end
-		if e.payload.session_id == st.session_id then
+		if n then
 			local id = e.payload.item_id
 			if e.type == "activity.presented" then open[id] = e.occurred_at
-			elseif e.type == "answer.submitted" or e.type == "student.response" then
-				open[id], answered[id] = nil, true
+			elseif e.type == "student.response" then
+				open[id], answered[id] = nil, { ack = true }
+			elseif e.type == "answer.submitted" then
+				open[id], answered[id] = nil, { answer = e.payload.answer, scored = {} }
+			elseif e.type == "answer.scored" and answered[id] then
+				local rec = copy(answered[id])
+				rec.scored = copy(rec.scored)
+				rec.scored[#rec.scored + 1] = { id = e.id, skill_id = e.payload.skill_id }
+				rec.correct, rec.hint_level = e.payload.correct, e.payload.hint_level
+				answered[id] = rec
+			elseif e.type == "answer.corrected" and answered[id] then
+				local rec = copy(answered[id])
+				rec.correct = e.payload.correct
+				answered[id] = rec
 			elseif e.type == "lesson.completed" then completed = true end
 		end
 	end

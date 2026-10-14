@@ -215,6 +215,7 @@ async function submit(answer, modality, rendered, card) {
 }
 
 function showFeedback(res, answer, rendered, card) {
+	state.answeredCard = card;
 	const reveal = res.reveal || {};
 	for (const b of card.querySelectorAll("button.choice")) {
 		if (b.dataset.id === reveal.choice) b.classList.add("correct");
@@ -267,11 +268,29 @@ function openReport(which) {
 	dialog.onclose = async () => {
 		if (dialog.returnValue !== "send") return;
 		try {
-			await api("/api/report", { kind: chosen, item_id: state.item ? state.item.id : "", note: document.getElementById("report-note").value });
-			progress.textContent = "Thanks, noted.";
+			const res = await api("/api/report", { kind: chosen, item_id: state.item ? state.item.id : "", note: document.getElementById("report-note").value });
+			if (res.settled) showRuling(res.settled);
+			else progress.textContent = "Thanks, noted.";
 		} catch (err) { fail(err); }
 	};
 	dialog.showModal();
+}
+
+// The oracle's ruling on a challenge, shown on the answered card. An upheld challenge also
+// fixes the running tally, since the server has corrected the score.
+function showRuling(ruling) {
+	if (ruling.upheld) state.correct += ruling.correct ? 1 : -1;
+	const heading = ruling.upheld
+		? `You caught a grading error. Your answer is now scored ${ruling.correct ? "correct" : "incorrect"}.`
+		: "Checked by the solver: the original score stands.";
+	const box = el("div", { class: "feedback ruling " + (ruling.upheld ? "good" : "neutral") }, [
+		el("strong", { text: heading }),
+		el("p", { text: ruling.proof }),
+	]);
+	const card = state.answeredCard;
+	const next = card && card.querySelector("button.primary:last-child");
+	if (card && next) card.insertBefore(box, next); else if (card) card.append(box);
+	progress.textContent = progressText();
 }
 
 document.getElementById("challenge").addEventListener("click", () => openReport("challenge"));

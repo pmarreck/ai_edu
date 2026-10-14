@@ -68,6 +68,12 @@ function scheduler.replay(events, opts)
 		pending[learner_id] = nil
 	end
 
+	-- Upheld challenges reverse earlier scores by event id, wherever they fall in the log.
+	local corrected = {}
+	for _, e in ipairs(events) do
+		if e.type == "answer.corrected" then corrected[e.payload.corrects] = e.payload.correct end
+	end
+
 	for _, e in ipairs(events) do
 		local id = e.learner_id
 		if e.type == "answer.submitted" then
@@ -76,7 +82,9 @@ function scheduler.replay(events, opts)
 		elseif e.type == "answer.scored" and e.payload.hint_level == 0 then
 			local p = pending[id] or { session = current[id], skills = {} }
 			local attempts = p.skills[e.payload.skill_id] or {}
-			attempts[#attempts + 1] = e.payload.correct == true
+			local c = corrected[e.id]
+			if c == nil then c = e.payload.correct end
+			attempts[#attempts + 1] = c == true
 			p.skills[e.payload.skill_id] = attempts
 			p.ended_at = e.occurred_at
 			pending[id] = p

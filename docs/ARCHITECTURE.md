@@ -27,7 +27,7 @@ Hexagonal split, functional core and imperative shell: the core is pure Lua over
 
 ## Canonical-state rule, as code
 
-Every event carries an `actor`: `learner`, `engine`, `parent`, or `llm:<role>`. An LLM actor may only emit proposal-class events (`lesson.planned`, `tutor.response`, `misconception.proposed`, `observation.proposed`). State-bearing events (`answer.scored`, `observation.accepted`, `misconception.confirmed`, ...) are engine-only. `event.validate` rejects violations before they reach the log, so an LLM cannot write canonical learner state even through a buggy caller. The allowed actor/type matrix is tested exhaustively.
+Every event carries an `actor`: `learner`, `engine`, `parent`, or `llm:<role>`. An LLM actor may only emit proposal-class events (`lesson.planned`, `tutor.response`, `misconception.proposed`, `observation.proposed`). State-bearing events (`answer.scored`, `answer.corrected`, `challenge.settled`, `observation.accepted`, `misconception.confirmed`, ...) are engine-only. `event.validate` rejects violations before they reach the log, so an LLM cannot write canonical learner state even through a buggy caller. The allowed actor/type matrix is tested exhaustively.
 
 ## Versioned contracts
 

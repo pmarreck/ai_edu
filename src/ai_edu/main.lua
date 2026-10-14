@@ -102,7 +102,8 @@ local function main(argv)
 		policy_version = "pedagogy-priors/2", day_index = local_day_index, reviews = reviews })
 	local static = {}
 	for path, spec in pairs(STATIC) do static[path] = { type = spec.type, body = read_file(spec.file) } end
-	local app = http_app.new({ course = c, log = log, clock = now_ms, static = static })
+	local oracle = { name = "kpk-solver", judge = function(it, answer) return kpk_content.judge(kpk.shared(), it, answer) end }
+	local app = http_app.new({ course = c, log = log, clock = now_ms, static = static, oracle = oracle })
 	local server = assert(web_server.listen({ host = opts.host, port = opts.port,
 		handler = function(req) return app:handle(req) end }))
 	local _, host, port = server:localname()
