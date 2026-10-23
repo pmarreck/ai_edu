@@ -1,0 +1,46 @@
+#!/usr/bin/env luajit
+-- One-time migration of a pre-chain event log file to the hash-chained format. The original is
+-- kept beside it as <path>.pre-chain; a second run, or a log that is already chained, is refused.
+local here = (arg[0]:match("^(.*)/[^/]*$") or ".") .. "/.."
+package.path = here .. "/src/?.lua;" .. package.path
+
+local VERSION = "0.1.0"
+local USAGE = [[
+Usage: chain-log [options] PATH
+
+Convert a pre-chain ai_edu event log (canonical NDJSON) to the hash-chained format.
+The original file is kept at PATH.pre-chain.
+
+Options:
+  -h, --help   show this help
+  --about      one-line description
+]]
+
+local function usage_error(msg)
+	io.stderr:write("chain-log: ", msg, "\n", USAGE)
+	os.exit(2)
+end
+
+local path
+local i = 1
+while i <= #arg do
+	local a = arg[i]
+	if a == "-h" or a == "--help" then io.stdout:write(USAGE); os.exit(0)
+	elseif a == "--about" then
+		print(string.format("ai_edu chain-log %s: migrate an event log to hash-chained lines (%s %s, %s)",
+			VERSION, jit.os, jit.arch, jit.version))
+		os.exit(0)
+	elseif a == "--" then path = arg[i + 1]; i = #arg
+	elseif a:sub(1, 1) == "-" then usage_error("unknown argument " .. a)
+	elseif path then usage_error("expected one log path")
+	else path = a end
+	i = i + 1
+end
+if not path then usage_error("expected one log path") end
+
+local log_file = require("ai_edu.log_file")
+local ok, err = log_file.migrate(path)
+if not ok then io.stderr:write("chain-log: ", err, "\n"); os.exit(1) end
+local log = assert(log_file.open(path))
+io.stderr:write(string.format("chain-log: migrated %d events in %s (original kept at %s.pre-chain)\n", log:count(), path, path))
+log:close()

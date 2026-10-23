@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# CLI surface tests for tools/chain-log (help, about, errors, one-time migration). Exit code = failure count.
+set -u
+cd "$(dirname "$0")/../.."
+failures=0
+fail() { printf 'FAIL: %s\n' "$1" >&2; failures=$((failures + 1)); }
+tool() { luajit tools/chain-log "$@"; }
+
+out=$(tool --help 2>&1); rc=$?
+[[ $rc -eq 0 && $out == *"Usage: chain-log"* ]] || fail "--help (rc=$rc)"
+out=$(tool -h 2>&1); [[ $? -eq 0 && $out == *"Usage: chain-log"* ]] || fail "-h"
+out=$(tool --about 2>&1); rc=$?
+lines=$(printf '%s\n' "$out" | wc -l)
+[[ $rc -eq 0 && $lines -eq 1 && $out == *"ai_edu chain-log"* ]] || fail "--about one line (rc=$rc, lines=$lines)"
+out=$(tool 2>&1); rc=$?
+[[ $rc -eq 2 && $out == *"expected one log path"* ]] || fail "no path (rc=$rc)"
+out=$(tool --bogus x 2>&1); rc=$?
+[[ $rc -eq 2 && $out == *"unknown argument --bogus"* ]] || fail "unknown arg (rc=$rc)"
+
+dir=$(mktemp -d "${TMPDIR:-/tmp}/chain log XXXXXX")
+log="$dir/events log.ndjson"
+printf '%s\n' '{"actor":"learner","id":"a","learner_id":"L","occurred_at":1,"payload":{},"provenance":{"policy_version":"p"},"schema":"event/1","seq":1,"type":"answer.submitted"}' > "$log"
+out=$(tool "$log" 2>&1); rc=$?
+[[ $rc -eq 0 && $out == *"migrated 1 events"* && -f "$log.pre-chain" ]] || fail "migrate path with spaces (rc=$rc: $out)"
+grep -q '"chain":"' "$log" || fail "migrated file is chained"
+out=$(tool "$log" 2>&1); rc=$?
+[[ $rc -eq 1 && $out == *"already exists"* ]] || fail "second run refused (rc=$rc)"
+find "$dir" -delete  # scratch this test created
+exit "$failures"

@@ -47,3 +47,7 @@ Each record carries a `schema` string. A version bump is required for any field 
 2. The log is append-only: no mutation API, returned events are copies, duplicate ids are rejected, `seq` is dense and monotonic.
 3. Replay is deterministic: same events give byte-identical canonical encodings of the projection; replay of a prefix equals the projection at that point; replay from the serialized log equals replay from memory.
 4. Vendor independence (metamorphic): rewriting every `provenance.model` leaves the projection unchanged.
+
+## Saved log format
+
+Each NDJSON line is the canonical encoding of one event plus `seq` and `chain`, where `chain` = BLAKE3(previous line's `chain` .. "\n" .. canonical event-with-seq) and the first line's predecessor is the empty string. Decoding recomputes every hash and rejects any edited, deleted, reordered or non-canonical line. A cut tail leaves a valid shorter log; detecting it needs `head()` recorded somewhere else. Logs written before the chain existed are converted once with `tools/chain-log`, which keeps the original as `<path>.pre-chain` and refuses already-chained input.

@@ -75,14 +75,95 @@ describe("event_log", function()
 end)
 
 describe("event_log encapsulation", function()
-	it("exposes only append, count, encode and events: no update, delete or stored event is reachable", function()
+	it("exposes only append, count, encode, events and head: no update, delete or stored event is reachable", function()
 		local log = event_log.new()
 		assert(log:append({ schema = "event/1", id = "x", type = "answer.submitted", actor = "learner",
 			learner_id = "L", occurred_at = 1, payload = {}, provenance = { policy_version = "p" } }))
 		local fields = {}
 		for k in pairs(log) do fields[#fields + 1] = k end
 		table.sort(fields)
-		assert.same({ "append", "count", "encode", "events" }, fields)
+		assert.same({ "append", "count", "encode", "events", "head" }, fields)
 		assert.is_nil(getmetatable(log))
+	end)
+end)
+
+describe("event_log hash chain", function()
+	local blake3 = require("blake3").blake3
+	local canonical = require("ai_edu.canonical")
+
+	local function sample(n)
+		local log = event_log.new()
+		for i = 1, n do assert(log:append(fx.event({ id = "e" .. i, payload = { answer = tostring(i) } }))) end
+		return log
+	end
+
+	it("chains each line to the one before it: chain_i = BLAKE3(chain_{i-1} .. newline .. entry)", function()
+		local log = sample(4)
+		local prev = ""
+		for line in log:encode():gmatch("[^\n]+") do
+			local entry = canonical.decode(line)
+			local chain = entry.chain
+			entry.chain = nil
+			assert.equal(blake3(prev .. "\n" .. canonical.encode(entry)), chain)
+			prev = chain
+		end
+		assert.equal(prev, log:head())
+		assert.equal("", event_log.new():head())
+	end)
+
+	it("keeps the chain out of the events it returns", function()
+		for _, e in ipairs(sample(2):events()) do assert.is_nil(e.chain) end
+	end)
+
+	it("rejects every single-byte change anywhere in the saved text", function()
+		local text = sample(3):encode()
+		local accepted = {}
+		for i = 1, #text do
+			if text:sub(i, i) ~= "\n" then
+				local b = text:byte(i)
+				local mutated = text:sub(1, i - 1) .. string.char(b == 48 and 49 or 48) .. text:sub(i + 1)
+				if event_log.decode(mutated) then accepted[#accepted + 1] = i end
+			end
+		end
+		assert.same({}, accepted)
+	end)
+
+	it("rejects a deleted, swapped or rewritten line even when seq numbers are fixed up", function()
+		local log = sample(3)
+		local lines = {}
+		for line in log:encode():gmatch("[^\n]+") do lines[#lines + 1] = canonical.decode(line) end
+		local function text_of(entries)
+			local out = {}
+			for i, e in ipairs(entries) do out[i] = canonical.encode(e) .. "\n" end
+			return table.concat(out)
+		end
+		local dropped = { lines[1], lines[3] }
+		dropped[2] = (function() local c = {} for k, v in pairs(lines[3]) do c[k] = v end c.seq = 2 return c end)()
+		local _, err = event_log.decode(text_of(dropped))
+		assert.matches("chain", err)
+		local rewritten = {}
+		for k, v in pairs(lines[2]) do rewritten[k] = v end
+		rewritten.payload = { answer = "forged" }
+		assert.matches("chain", select(2, event_log.decode(text_of({ lines[1], rewritten, lines[3] }))))
+	end)
+
+	it("cannot see a cut tail by itself, but the head it reports no longer matches an outside record", function()
+		local log = sample(3)
+		local text, head = log:encode(), log:head()
+		local cut = text:match("^(.-\n.-\n)")
+		local shorter = assert(event_log.decode(cut))
+		assert.is_not.equal(head, shorter:head())
+	end)
+
+	it("refuses an unchained legacy log, and migrates one into an identical chained log", function()
+		local events = sample(3):events()
+		local legacy = {}
+		for i, e in ipairs(events) do legacy[i] = canonical.encode(e) .. "\n" end
+		legacy = table.concat(legacy)
+		local _, err = event_log.decode(legacy)
+		assert.matches("unchained", err)
+		local migrated = assert(event_log.migrate(legacy))
+		assert.equal(sample(3):encode(), migrated:encode())
+		assert.is_nil(event_log.migrate(migrated:encode()))
 	end)
 end)
