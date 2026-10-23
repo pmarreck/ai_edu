@@ -26,7 +26,7 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 - [ ] Encode the evidence table as versioned policy data (evidence-policy/1) that lesson policies must cite
 - [x] Hide event_log internals behind closures; entries and the id index are unreachable by field access (done 2026-10-23 14:30 EDT)
 - [ ] Tamper evidence for persisted logs (hash chain over canonical lines)
-- [ ] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids)
+- [x] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids) and the king-and-pawn graph (done 2026-10-23 14:40 EDT)
 - [ ] mastery-estimate/1: versioned BKT estimator recomputed from events, independent-only by default
 - [ ] Model gateway + role-call/1 envelope; role outputs become proposal events only
 - [ ] Sandbox runner for generated LuaJIT activities (restricted env, instruction hooks, OS limits, no network)
