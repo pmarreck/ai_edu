@@ -46,16 +46,6 @@ describe("event_log", function()
 		assert.equal("answer.submitted", again[1].type)
 	end)
 
-	it("exposes no API for update, delete, insert or truncation", function()
-		local log = event_log.new()
-		local api = {}
-		for k, v in pairs(getmetatable(log).__index) do
-			if type(v) == "function" then api[#api + 1] = k end
-		end
-		table.sort(api)
-		assert.same({ "append", "count", "encode", "events" }, api)
-	end)
-
 	it("round-trips through canonical NDJSON, byte for byte", function()
 		local log = event_log.new()
 		log:append(fx.event({ id = "a", payload = { answer = "x\ny", skills = { "s1" } } }))
@@ -81,5 +71,18 @@ describe("event_log", function()
 			assert.is_nil(decoded, name)
 			assert.is_string(err, name)
 		end
+	end)
+end)
+
+describe("event_log encapsulation", function()
+	it("exposes only append, count, encode and events: no update, delete or stored event is reachable", function()
+		local log = event_log.new()
+		assert(log:append({ schema = "event/1", id = "x", type = "answer.submitted", actor = "learner",
+			learner_id = "L", occurred_at = 1, payload = {}, provenance = { policy_version = "p" } }))
+		local fields = {}
+		for k in pairs(log) do fields[#fields + 1] = k end
+		table.sort(fields)
+		assert.same({ "append", "count", "encode", "events" }, fields)
+		assert.is_nil(getmetatable(log))
 	end)
 end)

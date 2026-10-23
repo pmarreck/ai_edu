@@ -12,37 +12,35 @@ local function deep_copy(v)
 	return c
 end
 
-local Log = {}
-Log.__index = Log
-
+-- The log is a table of closures over private state, so entries and the id index cannot be
+-- reached or mutated by field access; only append adds to them.
 function event_log.new()
-	return setmetatable({ _entries = {}, _ids = {} }, Log)
-end
+	local entries, ids = {}, {}
+	local log = {}
 
--- Validate and append a copy of e; returns the assigned seq, or nil plus a reason.
-function Log:append(e)
-	local ok, err = event.validate(e)
-	if not ok then return nil, err end
-	if self._ids[e.id] then return nil, "duplicate event id " .. e.id end
-	local entry = deep_copy(e)
-	entry.seq = #self._entries + 1
-	self._entries[entry.seq] = entry
-	self._ids[e.id] = true
-	return entry.seq
-end
+	-- Validate and append a copy of e; returns the assigned seq, or nil plus a reason.
+	function log.append(_, e)
+		local ok, err = event.validate(e)
+		if not ok then return nil, err end
+		if ids[e.id] then return nil, "duplicate event id " .. e.id end
+		local entry = deep_copy(e)
+		entry.seq = #entries + 1
+		entries[entry.seq] = entry
+		ids[e.id] = true
+		return entry.seq
+	end
 
-function Log:count()
-	return #self._entries
-end
+	function log.count() return #entries end
 
-function Log:events()
-	return deep_copy(self._entries)
-end
+	function log.events() return deep_copy(entries) end
 
-function Log:encode()
-	local lines = {}
-	for i, entry in ipairs(self._entries) do lines[i] = canonical.encode(entry) .. "\n" end
-	return table.concat(lines)
+	function log.encode()
+		local lines = {}
+		for i, entry in ipairs(entries) do lines[i] = canonical.encode(entry) .. "\n" end
+		return table.concat(lines)
+	end
+
+	return log
 end
 
 -- Rebuild a log from canonical NDJSON, re-validating every event and requiring seq 1..n in order.

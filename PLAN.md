@@ -22,8 +22,9 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Platform
 
+- [ ] Conform to the cross-platform project build convention: ./build, ./run, PF naming, declared platform matrix (context: docs/plan_context/build_arch_conformance.md)
 - [ ] Encode the evidence table as versioned policy data (evidence-policy/1) that lesson policies must cite
-- [ ] Hide event_log internals behind closures; `_entries` is still reachable by direct field access
+- [x] Hide event_log internals behind closures; entries and the id index are unreachable by field access (done 2026-10-23 14:30 EDT)
 - [ ] Tamper evidence for persisted logs (hash chain over canonical lines)
 - [ ] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids)
 - [ ] mastery-estimate/1: versioned BKT estimator recomputed from events, independent-only by default
