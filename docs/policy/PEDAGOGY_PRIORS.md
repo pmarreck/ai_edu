@@ -23,6 +23,8 @@ These are starting priors. This learner's measured outcomes override them where 
 
 Most of this evidence comes from adolescents and adults. For children under about 7 a tier does not carry over automatically; age-specific evidence is tracked in separate reviews under `docs/evidence/`.
 
+The same priors are encoded as data in `content/evidence_policy.lua` (`evidence-policy/1`). Every lesson cites the entries it uses; a lesson citing an unknown entry or one marked `never` is rejected, and a test checks every cited section and DOI against the review it names. Change both together.
+
 ## Recurring evidence review
 
 - A full review of every prior runs every 4 to 6 months. The next one is due 2027-02-28 and must finish by 2027-03-28.

@@ -93,7 +93,9 @@ local function main(argv)
 	local http_app = require("ai_edu.http_app")
 	local web_server = require("ai_edu.web_server")
 
-	local lessons = assert(kpk_content.build(kpk.shared(), dofile("content/kpk_week.lua")))
+	local week = dofile("content/kpk_week.lua")
+	assert(require("ai_edu.evidence_policy").check_lessons(dofile("content/evidence_policy.lua"), week))
+	local lessons = assert(kpk_content.build(kpk.shared(), week))
 	os.execute("mkdir -p '" .. opts.data:gsub("'", "'\\''") .. "'")
 	local log = assert(log_file.open(opts.data .. "/events.ndjson"))
 	local reviews = require("ai_edu.kpk_review").new({ solved = kpk.shared(), lessons = lessons,

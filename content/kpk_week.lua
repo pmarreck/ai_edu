@@ -6,6 +6,7 @@
 return {
 	{
 		id = "square", title = "The square of the pawn", day = 0, skill = "kpk.square",
+		techniques = { "explanation_first", "worked_examples", "retrieval_feedback" },
 		cards = {
 			{ id = "square-intro", ask = "info",
 				text = "A lone king chasing a pawn has a quick test. Draw a square from the pawn to its promotion rank, as wide as it is tall. If the defending king is inside the square, or can step into it on its move, it catches the pawn.",
@@ -43,6 +44,7 @@ return {
 	},
 	{
 		id = "opposition", title = "The opposition", day = 1, skill = "kpk.opposition",
+		techniques = { "explanation_first", "worked_examples", "retrieval_feedback", "spacing" },
 		cards = {
 			{ id = "opp-intro", ask = "info",
 				text = "When the kings face each other on a file with one square between them, the side that does not have to move holds the opposition. The king that must move has to give way, and the other king gets through.",
@@ -74,6 +76,7 @@ return {
 	},
 	{
 		id = "key-squares", title = "Key squares", day = 2, skill = "kpk.key_squares",
+		techniques = { "explanation_first", "worked_examples", "retrieval_feedback", "spacing" },
 		cards = {
 			{ id = "key-intro", ask = "info",
 				text = "Every pawn has key squares: if the attacking king reaches one, it wins no matter who is to move. For a pawn on its 2nd, 3rd or 4th rank (not an a- or h-pawn), they are the three squares two ranks in front of it.",
@@ -103,6 +106,7 @@ return {
 	},
 	{
 		id = "day7", title = "One-week check", day = 7, skill = "kpk.review",
+		techniques = { "spacing", "retrieval_feedback", "interleaving" },
 		cards = {
 			{ id = "d7-intro", ask = "info",
 				text = "A week later: no explanations this time until you answer. The last two positions use a pawn you have not seen in these lessons." },
