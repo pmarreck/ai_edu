@@ -103,6 +103,7 @@ local function main(argv)
 	local checkpoints = require("ai_edu.kpk_review").checkpoints({ solved = kpk.shared(), lessons = lessons,
 		learner_id = opts.learner, day_index = local_day_index })
 	local c = course.define({ lessons = lessons, learner_id = opts.learner, checkpoints = checkpoints,
+		gate = require("ai_edu.approvals").gate,
 		policy_version = "pedagogy-priors/2", day_index = local_day_index, reviews = reviews })
 	local static = {}
 	for path, spec in pairs(STATIC) do static[path] = { type = spec.type, body = read_file(spec.file) } end

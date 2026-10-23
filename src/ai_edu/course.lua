@@ -11,6 +11,8 @@ local course = {}
 -- serializable plan; lesson(plan) -> { id = "review", title, items }.
 -- checkpoints (optional provider): the same interface for delayed no-feedback checks; its
 -- lessons carry feedback = false (docs/plan_context/checkpoints.md).
+-- gate (optional): function(items, events) -> items as they may be administered, applied at
+-- start and resume (approvals.gate keeps unapproved tier 3-4 items practice-only).
 function course.define(opts)
 	local by_id = {}
 	for _, l in ipairs(opts.lessons) do by_id[l.id] = l end
@@ -21,7 +23,7 @@ function course.define(opts)
 	for _, g in ipairs(generated) do generated_by_id[g.id] = g end
 	return { lessons = opts.lessons, by_id = by_id, learner_id = opts.learner_id,
 		policy_version = opts.policy_version, day_index = opts.day_index, reviews = opts.reviews,
-		generated = generated, generated_by_id = generated_by_id }
+		generated = generated, generated_by_id = generated_by_id, gate = opts.gate }
 end
 
 -- This learner's course start, per-lesson session counts, completions and latest session.
@@ -62,8 +64,9 @@ function course.status(def, events, now)
 	return out
 end
 
-local function new_session(def, lesson, session_id)
-	return session.init({ items = lesson.items, learner_id = def.learner_id, session_id = session_id,
+local function new_session(def, lesson, session_id, events)
+	local items = def.gate and def.gate(lesson.items, events) or lesson.items
+	return session.init({ items = items, learner_id = def.learner_id, session_id = session_id,
 		policy_version = def.policy_version, lesson_id = lesson.id, feedback = lesson.feedback })
 end
 
@@ -81,7 +84,7 @@ function course.start(def, events, now, lesson_id)
 	if not lesson then return nil, "unknown lesson " .. tostring(lesson_id) end
 	if not plan and not unlocked(def, lesson, h.start_ms, now) then return nil, "lesson " .. lesson_id .. " is locked" end
 	local session_id = lesson_id .. "#" .. ((h.started[lesson_id] or 0) + 1)
-	local st, err = new_session(def, lesson, session_id)
+	local st, err = new_session(def, lesson, session_id, events)
 	if not st then return nil, err end
 	return st, { {
 		schema = "event/1", id = session_id .. ":start", type = "session.started", actor = "engine",
@@ -100,7 +103,7 @@ function course.resume(def, events)
 	local g = def.generated_by_id[last.lesson_id]
 	if g and last.plan then lesson = g.provider:lesson(last.plan) end
 	if not lesson then return nil end
-	local st = new_session(def, lesson, last.session_id)
+	local st = new_session(def, lesson, last.session_id, events)
 	return st and session.restore(st, events)
 end
 

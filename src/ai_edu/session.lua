@@ -105,12 +105,14 @@ function session.submit(st, item_id, answer, meta, now)
 	else
 		specs = { { "learner", "answer.submitted", { item_id = item_id, session_id = st.session_id, answer = answer,
 			modality = meta.modality, latency_ms = now - presented_at } } }
-		for _, skill_id in ipairs(it.skill_ids) do
+		-- practice-only items (awaiting approval) give feedback but write no score
+		for _, skill_id in ipairs(it.graded == false and {} or it.skill_ids) do
 			specs[#specs + 1] = { "engine", "answer.scored",
 				{ item_id = item_id, skill_id = skill_id, correct = result.correct, hint_level = h,
 					checkpoint = it.checkpoint } }
 		end
-		out = st.feedback and { correct = result.correct, reveal = item.reveal(it, answer) } or { recorded = true }
+		out = st.feedback and { correct = result.correct, reveal = item.reveal(it, answer), practice = it.graded == false or nil }
+			or { recorded = true }
 	end
 	local events, counter = make_events(st, now, specs)
 	local record = { ack = result.ack, answer = answer, correct = result.correct, hint_level = h, scored = {} }

@@ -47,3 +47,4 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Recently done] Bold refactor: session and course are pure transitions; http_app is the imperative shell (done 2026-09-30 15:51 EDT)
 - [x] [Recently done] Published as public github.com/pmarreck/ai_edu after removing private details (done 2026-10-09 17:07 EDT)
 - [x] [Recently done] Reading jump-start ideas proposed with evidence review (done 2026-09-28, reconciled 2026-10-14)
+- [x] [Recently done] First cohort, subject and deployment chosen: BDFN self-dogfood, king-and-pawn endgames, private network (done 2026-09-28, reconciled 2026-10-14)

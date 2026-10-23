@@ -13,7 +13,7 @@ Use the strongest available tier. An item records its oracle and tier in `proven
 
 ## Consequences
 
-- **Instructor approval workflow.** Items at tier 3 or 4, and any tier 3 simulation, enter a review queue and are administered as graded items only after approval. Approval is an event with the approver and date. Tier 1 and 2 items are approved by their oracle.
+- **Instructor approval workflow.** Items at tier 3 or 4, and any tier 3 simulation, enter a review queue and are administered as graded items only after approval. Approval is an event with the approver and date. Tier 1 and 2 items are approved by their oracle. Implemented in `src/ai_edu/approvals.lua`: a parent `item.approved` or `item.rejected` event names the BLAKE3 hash of the item's exact canonical content, so an edited item needs a new decision; until approved an item is practice-only (feedback, no score), and a rejected one is never shown. The review-queue entry point is still open in PLAN.md.
 - **Claims are checked, not trusted.** Authored text states its claims in machine-checkable form where possible (the `claim` fields in `content/kpk_week.lua`), and the build fails on disagreement.
 - **Challenges are settled by the oracle.** A learner's "I think you're wrong" is adjudicated against the oracle, not against the stored key, so a wrong key is exposed rather than defended.
 - **Oracles carry versions.** A changed oracle version can re-verify old items and re-score logged answers.

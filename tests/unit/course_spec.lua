@@ -182,3 +182,27 @@ describe("course checkpoints", function()
 		assert.matches("nothing due", err)
 	end)
 end)
+
+describe("course approval gate", function()
+	local approvals = require("ai_edu.approvals")
+	local function tier3(id)
+		local it = card(id); it.provenance = { policy_version = "p", oracle_tier = 3 }; return it
+	end
+	local lessons = { { id = "H", title = "History", day = 0, items = { tier3("h1"), card("h2") } } }
+	local function def() return course.define({ lessons = lessons, learner_id = "learner", policy_version = "p",
+		day_index = function(ms) return math.floor(ms / DAY) end, gate = approvals.gate }) end
+
+	it("starts unapproved tier-3 items as practice-only and graded once approved", function()
+		local st = assert(course.start(def(), {}, 100, "H"))
+		assert.is_false(st.items.h1.graded)
+		assert.is_nil(st.items.h2.graded)
+		local approved = { { type = "item.approved", learner_id = "learner",
+			payload = { item_id = "h1", item_hash = approvals.item_hash(lessons[1].items[1]), approver = "BDFN" } } }
+		local st2 = assert(course.start(def(), approved, 100, "H"))
+		assert.is_nil(st2.items.h1.graded)
+		local log = event_log.new()
+		local st3, events = course.start(def(), {}, 100, "H")
+		for _, e in ipairs(events) do log:append(e) end
+		assert.is_false(assert(course.resume(def(), log:events())).items.h1.graded)
+	end)
+end)

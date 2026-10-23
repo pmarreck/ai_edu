@@ -21,7 +21,7 @@ local TYPES_BY_ACTOR_KIND = {
 		"break.offered", "break.started", "break.ended", "artifact.fallback_used",
 		"lesson.completed", "retrieval.scheduled", "challenge.settled", "answer.corrected",
 	}),
-	parent = set({ "annotation.added" }),
+	parent = set({ "annotation.added", "item.approved", "item.rejected" }),
 	llm = set({ "lesson.planned", "tutor.response", "misconception.proposed", "observation.proposed" }),
 }
 
@@ -52,6 +52,15 @@ local function score_error(p)
 	if type(h) ~= "number" or h < 0 or h ~= math.floor(h) then return "payload.hint_level must be a non-negative integer" end
 end
 
+-- A human decision on one exact version of an item (docs/policy/ORACLES.md, tiers 3 and 4).
+local function approval_error(p)
+	if not nonempty_string(p.item_id) then return "payload.item_id must be a non-empty string" end
+	if type(p.item_hash) ~= "string" or not p.item_hash:match("^%x+$") or #p.item_hash ~= 64 then
+		return "payload.item_hash must be a 64-digit hex BLAKE3 hash"
+	end
+	if not nonempty_string(p.approver) then return "payload.approver must be a non-empty string" end
+end
+
 local PAYLOAD_CHECKS = {
 	["answer.scored"] = function(p)
 		local err = score_error(p)
@@ -70,6 +79,8 @@ local PAYLOAD_CHECKS = {
 			return "payload.was_correct must be the opposite boolean of payload.correct"
 		end
 	end,
+	["item.approved"] = function(p) return approval_error(p) end,
+	["item.rejected"] = function(p) return approval_error(p) end,
 	["challenge.settled"] = function(p)
 		if not nonempty_string(p.item_id) then return "payload.item_id must be a non-empty string" end
 		if type(p.upheld) ~= "boolean" then return "payload.upheld must be a boolean" end

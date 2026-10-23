@@ -153,3 +153,15 @@ describe("kpk_content.judge", function()
 		assert.is_nil(kpk_content.judge(solved, m, { choice = "win" }))
 	end)
 end)
+
+describe("kpk_content provenance", function()
+	it("records the solver as a tier-2 oracle, so no item waits for human approval", function()
+		local approvals = require("ai_edu.approvals")
+		for _, l in ipairs(assert(kpk_content.build(solved, dofile("content/kpk_week.lua")))) do
+			for _, it in ipairs(l.items) do
+				assert.equal(2, it.provenance.oracle_tier)
+				assert.is_false(approvals.required(it))
+			end
+		end
+	end)
+end)

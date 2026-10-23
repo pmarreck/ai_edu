@@ -182,7 +182,7 @@ function kpk_content.build(solved, authored)
 				schema = "item/1", id = card.id, skill_ids = { card.skill or l.skill or "kpk" },
 				prompt = { text = card.text, board = built.board or card.board },
 				response = built.response, key = built.key, feedback = card.feedback, phase = card.phase,
-				provenance = { policy_version = POLICY_VERSION, author = AUTHOR, key_source = "kpk-solver" },
+				provenance = { policy_version = POLICY_VERSION, author = AUTHOR, key_source = "kpk-solver", oracle_tier = 2 },
 				oracle = { name = "kpk-solver", ask = card.ask },
 			}
 		end

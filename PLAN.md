@@ -4,7 +4,7 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Now
 
-- [x] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice (done 2026-10-23 14:41 EDT) (context: docs/plan_context/checkpoints.md)
+- [x] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice (done 2026-10-23 14:41 EDT, 68bac9b) (context: docs/plan_context/checkpoints.md)
 
 - [x] Challenges settled by the solver, never the stored key: upheld = answer.corrected per score plus challenge.settled{upheld} for the scrutiny axis to credit; rejected = proof shown, no penalty (done 2026-10-14 14:45 EDT)
 
@@ -18,7 +18,8 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 - [ ] FSRS-style model plus moving-average baseline, scored by log loss on the learner's own reviews once enough data exists
 - [ ] Challenges on wording or facts: verifier model proposes a ruling, BDFN confirms; no credit granted by a model alone
 - [ ] "Talk it over" tutor panel grounded in solver facts: typed for BDFN first; cannot change scores
-- [ ] Instructor approval workflow for oracle tier 3-4 items (docs/policy/ORACLES.md)
+- [x] Instructor approval workflow for oracle tier 3-4 items: hash-bound item.approved/item.rejected events, unapproved items practice-only, rejected dropped (done 2026-10-23 14:43 EDT)
+- [ ] Approval entry point (review-queue page or CLI over approvals.pending), needed before the first tier 3-4 item ships
 
 ## Platform
 
@@ -48,4 +49,3 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Recently done
 
-- [x] First cohort, subject and deployment chosen: BDFN self-dogfood, king-and-pawn endgames, private network (done 2026-09-28, reconciled 2026-10-14)

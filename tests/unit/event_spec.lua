@@ -12,13 +12,15 @@ local ENGINE = {
 	"break.offered", "break.started", "break.ended", "artifact.fallback_used",
 	"lesson.completed", "retrieval.scheduled", "challenge.settled", "answer.corrected",
 }
-local PARENT = { "annotation.added" }
+local PARENT = { "annotation.added", "item.approved", "item.rejected" }
 local LLM = { "lesson.planned", "tutor.response", "misconception.proposed", "observation.proposed" }
 local CORRECTED = { item_id = "i", skill_id = "s", correct = true, was_correct = false, hint_level = 0, corrects = "s1:7" }
 local VALID_PAYLOADS = {
 	["answer.scored"] = { item_id = "i", skill_id = "s", correct = true, hint_level = 0 },
 	["answer.corrected"] = CORRECTED,
 	["challenge.settled"] = { item_id = "i", upheld = false, oracle = "kpk-solver", proof = "p" },
+	["item.approved"] = { item_id = "i", item_hash = string.rep("a", 64), approver = "BDFN" },
+	["item.rejected"] = { item_id = "i", item_hash = string.rep("a", 64), approver = "BDFN" },
 }
 local LLM_ROLES = { "planner", "tutor", "evaluator", "verifier", "research" }
 
@@ -61,7 +63,7 @@ describe("event.validate", function()
 				end
 			end
 		end
-		assert.equal(12 * 30, checked)
+		assert.equal(12 * 32, checked)
 		assert.same({}, mismatches)
 	end)
 
@@ -171,5 +173,20 @@ describe("event.validate answer.scored checkpoint tag", function()
 		end
 		assert.same({ true, true, true, false, false, false, false },
 			{ with(nil), with(1), with(30), with(0), with(-7), with(1.5), with("7") })
+	end)
+end)
+
+describe("event.validate approval payloads", function()
+	it("requires the item, the exact content hash and who decided", function()
+		local function v(t, p) return event.validate(valid_event({ actor = "parent", type = t, payload = p })) == true end
+		local H = string.rep("ab", 32)
+		assert.same({ true, true, false, false, false, false }, {
+			v("item.approved", { item_id = "i", item_hash = H, approver = "BDFN" }),
+			v("item.rejected", { item_id = "i", item_hash = H, approver = "BDFN", note = "wrong date" }),
+			v("item.approved", { item_id = "i", item_hash = "abc", approver = "BDFN" }),
+			v("item.approved", { item_id = "i", item_hash = string.rep("G", 64), approver = "BDFN" }),
+			v("item.approved", { item_id = "i", item_hash = H }),
+			v("item.approved", { item_hash = H, approver = "BDFN" }),
+		})
 	end)
 end)

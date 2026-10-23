@@ -26,6 +26,7 @@ annotate=[
 	docs/policy/ORACLES.md = Oracle preference order (tool > algorithm > vetted AI simulation > human-reviewed), approval workflow
 	docs/policy/PEDAGOGY_PRIORS.md = pedagogy-priors/2: versioned priors superseding founding prompt 2.3; 4-6 month review cadence, next due 2027-02-28
 	serve = Starts the web app inside the flake env (--help, --about, --host, --port, --data, --learner)
+	src/ai_edu/approvals.lua = Tier 3-4 item approval: content hash, gate (practice-only until approved, rejected dropped), pending queue
 	src/ai_edu/canonical.lua = Canonical JSON encoder (sorted keys, safe ints) used for byte-identical replay comparison and NDJSON storage
 	src/ai_edu/checkpoints.lua = Which skills owe a 1/7/30-day unaided no-feedback checkpoint, folded from the log
 	src/ai_edu/course.lua = Course as pure functions of (definition, events, now): status, start, resume; day unlocks and reviews
