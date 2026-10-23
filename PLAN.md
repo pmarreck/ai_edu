@@ -8,14 +8,14 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 - [x] Challenges settled by the solver, never the stored key: upheld = answer.corrected per score plus challenge.settled{upheld} for the scrutiny axis to credit; rejected = proof shown, no penalty (done 2026-10-14 14:45 EDT)
 
-- [x] Add Mechatron Prime CI (the project's continuous-integration service) for the flake check, with README badge (done 2026-10-14 14:32 EDT)
 
 ## Next: king-and-pawn dogfood
 
 - [ ] Counterfeits and scrutiny axis, design agreed 2026-09-30 (context: docs/plan_context/counterfeit_scrutiny.md)
 - [ ] Misconception loop: deterministic signals + evaluator AI propose (misconception.proposed), engine confirms via diagnostic items or a short learner dialog, confirmed ones steer reviews
 - [ ] "Try it": play your own idea against the solver on the board (no AI needed; works for the child)
-- [ ] FSRS-style model plus moving-average baseline, scored by log loss on the learner's own reviews once enough data exists
+- [x] FSRS-6 model (matches ts-fsrs) plus moving-average baseline, scored by log loss on cross-day attempts; verdict withheld below 30 predictions each (done 2026-10-23 14:48 EDT)
+- [ ] Swap the review scheduler to the better model once memory_models.compare has enough data (3 cross-day predictions as of 2026-10-23)
 - [ ] Challenges on wording or facts: verifier model proposes a ruling, BDFN confirms; no credit granted by a model alone
 - [ ] "Talk it over" tutor panel grounded in solver facts: typed for BDFN first; cannot change scores
 - [x] Instructor approval workflow for oracle tier 3-4 items: hash-bound item.approved/item.rejected events, unapproved items practice-only, rejected dropped (done 2026-10-23 14:43 EDT)
