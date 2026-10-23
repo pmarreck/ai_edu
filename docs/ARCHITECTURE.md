@@ -19,7 +19,7 @@ thin client ──► learning server (LuaJIT)
                  ├─ mastery estimator    (implemented: bkt@1, recomputed from events)
                  ├─ scheduler            (contract only)
                  ├─ lesson state machine (contract only)
-                 ├─ artifact library + sandbox runner (contract only)
+                 ├─ artifact library (contract only) + sandbox runner (implemented, Linux)
                  └─ model gateway ──► planner / tutor / evaluator / verifier / research roles
 ```
 
@@ -51,3 +51,7 @@ Each record carries a `schema` string. A version bump is required for any field 
 ## Saved log format
 
 Each NDJSON line is the canonical encoding of one event plus `seq` and `chain`, where `chain` = BLAKE3(previous line's `chain` .. "\n" .. canonical event-with-seq) and the first line's predecessor is the empty string. Decoding recomputes every hash and rejects any edited, deleted, reordered or non-canonical line. A cut tail leaves a valid shorter log; detecting it needs `head()` recorded somewhere else. Logs written before the chain existed are converted once with `tools/chain-log`, which keeps the original as `<path>.pre-chain` and refuses already-chained input.
+
+## Activity sandbox (implemented, Linux only)
+
+`src/ai_edu/sandbox.lua` runs activity source in a separate LuaJIT process: `unshare --user --map-root-user --net` (no network), `prlimit` address-space, CPU-time and process-count ceilings, and `timeout` for wall clock. Inside, `src/ai_edu/sandbox_child.lua` turns the JIT off, loads source text only (bytecode is refused) into an environment without `io`, `os`, `ffi`, `jit`, `debug`, `require`, `load`, `package`, `coroutine`, `getmetatable`, raw access or `string.dump`, and enforces an instruction-count and heap limit through a count hook that `pcall` cannot swallow. Outcomes are JSON: a result, or one of `compile`, `runtime`, `result`, `instructions`, `memory`, `killed`, `unavailable`. Where the OS controls are missing (macOS, or a Linux without unprivileged user namespaces) it refuses to run. Generated activities still need the artifact contract, their own tests and the privacy and failure controls in PLAN.md before a learner sees one.

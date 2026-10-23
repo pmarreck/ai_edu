@@ -18,10 +18,12 @@
 			randomLib = system: random.packages.${system}.random-luajit-lib;
 			# Trailing ;; keeps LuaJIT's default search path after the random library's.
 			luaPathFor = system: "${randomLib system}/lib/?.lua;;";
+			# unshare and prlimit for the activity sandbox (Linux only; elsewhere the sandbox refuses to run).
+			sandboxToolsFor = pkgs: pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.util-linux ];
 		in {
 			devShells = forAllSystems (system: {
 				default = (pkgsFor system).mkShell {
-					packages = [ (luaFor (pkgsFor system)) (pkgsFor system).ripgrep ];
+					packages = [ (luaFor (pkgsFor system)) (pkgsFor system).ripgrep ] ++ sandboxToolsFor (pkgsFor system);
 					LUA_PATH = luaPathFor system;
 				};
 			});
@@ -30,7 +32,7 @@
 				let pkgs = pkgsFor system;
 				in {
 					tests = pkgs.runCommand "ai-edu-tests" {
-						nativeBuildInputs = [ (luaFor pkgs) pkgs.bash pkgs.ripgrep ];
+						nativeBuildInputs = [ (luaFor pkgs) pkgs.bash pkgs.ripgrep pkgs.coreutils ] ++ sandboxToolsFor pkgs;
 						LUA_PATH = luaPathFor system;
 						AI_EDU_IN_ENV = "1";
 					} ''

@@ -37,3 +37,12 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Solver-generated, concept-verified fresh positions per KPK concept, kept distinct between concepts (done 2026-09-30 13:35 EDT)
 - [x] [Next › Dogfood: BDFN learns king-and-pawn endgames (opposition, squ…] Evidence check on planted errors; revisions accepted with both directions from the start (done 2026-09-30 12:45 EDT)
 - [x] [Recently done] Scheduler core and review sessions from due skills with logged plans (done 2026-09-30 13:45 EDT)
+
+## Retired 2026-10-23
+
+- [x] [Recently done] Web-first stack (thin fixed client, LuaJIT server) live on the private network for BDFN's dogfood (done 2026-09-30 12:07 EDT, reconciled 2026-10-14)
+- [x] [Recently done] One-week king-and-pawn course: three lessons on days 0-2 with unaided checks, day-7 delayed check with a transfer item (done 2026-09-30 11:35 EDT, reconciled 2026-10-14)
+- [x] [Recently done] Lessons drafted ahead, solver-verified, frozen and versioned in content/kpk_week.lua with deterministic scoring (done 2026-09-30 13:35 EDT, reconciled 2026-10-14)
+- [x] [Recently done] File-backed NDJSON log adapter (src/ai_edu/log_file.lua); SQLite dropped as unneeded (done 2026-09-30, reconciled 2026-10-14)
+- [x] [Recently done] Bold refactor: session and course are pure transitions; http_app is the imperative shell (done 2026-09-30 15:51 EDT)
+- [x] [Recently done] Published as public github.com/pmarreck/ai_edu after removing private details (done 2026-10-09 17:07 EDT)
