@@ -79,7 +79,7 @@ function scheduler.replay(events, opts)
 		if e.type == "answer.submitted" then
 			if pending[id] and pending[id].session ~= e.payload.session_id then close(id) end
 			current[id] = e.payload.session_id
-		elseif e.type == "answer.scored" and e.payload.hint_level == 0 then
+		elseif e.type == "answer.scored" and e.payload.hint_level == 0 and not e.payload.checkpoint then
 			local p = pending[id] or { session = current[id], skills = {} }
 			local attempts = p.skills[e.payload.skill_id] or {}
 			local c = corrected[e.id]

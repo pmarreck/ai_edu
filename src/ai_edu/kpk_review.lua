@@ -4,6 +4,7 @@
 local scheduler = require("ai_edu.scheduler")
 local kpk_gen = require("ai_edu.kpk_gen")
 local kpk_content = require("ai_edu.kpk_content")
+local checkpoints = require("ai_edu.checkpoints")
 
 local kpk_review = {}
 
@@ -53,24 +54,31 @@ function Provider:_seen(events)
 	return seen
 end
 
--- A plan of PER_SKILL fresh positions per due skill, interleaved round-robin across skills.
-function Provider:plan(events, now, due)
+-- PER_SKILL fresh positions per skill, interleaved round-robin; extra[i] is merged into skill i's cards.
+local function plan_cards(self, events, now, skills, extra)
 	local seen = self:_seen(events)
 	local per_skill = {}
-	for i, skill in ipairs(due) do
+	for i, skill in ipairs(skills) do
 		local concept = CONCEPT_FOR_SKILL[skill]
 		local cards = kpk_gen.generate(self.solved, concept, { seed = now + i, count = PER_SKILL, exclude = seen })
 		per_skill[i] = {}
 		for _, c in ipairs(cards) do
 			seen[kpk_gen.position_key(c.board)] = true
-			per_skill[i][#per_skill[i] + 1] = { concept = concept, board = c.board }
+			local card = { concept = concept, board = c.board }
+			for k, v in pairs(extra and extra[i] or {}) do card[k] = v end
+			per_skill[i][#per_skill[i] + 1] = card
 		end
 	end
 	local cards = {}
 	for round = 1, PER_SKILL do
-		for i = 1, #due do cards[#cards + 1] = per_skill[i][round] end
+		for i = 1, #skills do cards[#cards + 1] = per_skill[i][round] end
 	end
 	return { cards = cards }
+end
+
+-- A plan of PER_SKILL fresh positions per due skill, interleaved round-robin across skills.
+function Provider:plan(events, now, due)
+	return plan_cards(self, events, now, due)
 end
 
 function Provider:lesson(plan)
@@ -79,6 +87,46 @@ function Provider:lesson(plan)
 	for _, p in ipairs(plan.cards) do cards[#cards + 1] = assert(kpk_gen.card(self.solved, p.concept, p.board)) end
 	local built = assert(kpk_content.build(self.solved, { { id = "review", title = "Review", day = 0, skill = "kpk.review", cards = cards } }))
 	return built[1]
+end
+
+
+local Checkpoints = setmetatable({}, { __index = Provider })
+Checkpoints.__index = Checkpoints
+
+-- Delayed no-feedback checks (docs/plan_context/checkpoints.md) built from the same fresh,
+-- never-seen positions as reviews. opts as for kpk_review.new.
+function kpk_review.checkpoints(opts)
+	return setmetatable(kpk_review.new(opts), Checkpoints)
+end
+
+-- Due checkpoints as { {skill, offset} } for skills that have a generator.
+function Checkpoints:due(events, now)
+	local out = {}
+	for _, d in ipairs(checkpoints.due(events, self.learner_id, now, self.day_index)) do
+		if CONCEPT_FOR_SKILL[d.skill] then out[#out + 1] = d end
+	end
+	return out
+end
+
+function Checkpoints:plan(events, now, due)
+	local skills, extra = {}, {}
+	for i, d in ipairs(due) do skills[i], extra[i] = d.skill, { offset = d.offset } end
+	return plan_cards(self, events, now, skills, extra)
+end
+
+function Checkpoints:lesson(plan)
+	local cards = { { id = "checkpoint-intro", ask = "info",
+		text = "Checkpoint: fresh positions, no hints and no feedback. It measures what you remember; answers are recorded, not marked, here." } }
+	local offsets = {}
+	for _, p in ipairs(plan.cards) do
+		local card = assert(kpk_gen.card(self.solved, p.concept, p.board))
+		offsets[card.id] = p.offset
+		cards[#cards + 1] = card
+	end
+	local built = assert(kpk_content.build(self.solved, { { id = "checkpoint", title = "Checkpoint", day = 0, skill = "kpk.review", cards = cards } }))[1]
+	for _, it in ipairs(built.items) do it.checkpoint = offsets[it.id] end
+	built.feedback = false
+	return built
 end
 
 return kpk_review

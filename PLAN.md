@@ -4,7 +4,7 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Now
 
-- [ ] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice
+- [x] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice (done 2026-10-23 14:41 EDT) (context: docs/plan_context/checkpoints.md)
 
 - [x] Challenges settled by the solver, never the stored key: upheld = answer.corrected per score plus challenge.settled{upheld} for the scrutiny axis to credit; rejected = proof shown, no penalty (done 2026-10-14 14:45 EDT)
 
@@ -29,7 +29,7 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 - [x] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids) and the king-and-pawn graph (done 2026-10-23 14:24 EDT, 150b2ff)
 - [x] mastery-estimate/1: versioned BKT estimator recomputed from events, independent-only by default, corrections applied (done 2026-10-23 14:25 EDT, 0caee84)
 - [ ] Model gateway + role-call/1 envelope; role outputs become proposal events only
-- [x] Sandbox runner for generated LuaJIT activities: restricted env, instruction and heap hook, OS limits, no network; Linux only, refuses elsewhere (done 2026-10-23 14:34 EDT)
+- [x] Sandbox runner for generated LuaJIT activities: restricted env, instruction and heap hook, OS limits, no network; Linux only, refuses elsewhere (done 2026-10-23 14:34 EDT, 7a5da34)
 - [ ] Privacy, sandbox and learner-facing failure controls before testing with other learners or generated activities
 - [ ] Terminal interface as a user-selectable alternative to the web client
 - [ ] Question types: spoken/text prompt with drawn, tapped, typed, rubric-judged free-text and spoken answers; accessibility via spoken input and output
@@ -48,5 +48,4 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 ## Recently done
 
-- [x] Reading jump-start ideas proposed with evidence review (done 2026-09-28, reconciled 2026-10-14)
 - [x] First cohort, subject and deployment chosen: BDFN self-dogfood, king-and-pawn endgames, private network (done 2026-09-28, reconciled 2026-10-14)

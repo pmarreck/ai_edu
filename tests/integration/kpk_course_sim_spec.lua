@@ -121,3 +121,51 @@ describe("king-and-pawn challenges settled by the solver", function()
 		assert.equal(1, corrected)
 	end)
 end)
+
+describe("king-and-pawn checkpoints over the HTTP app", function()
+	it("offers an unmarked checkpoint the day after first practice and keeps it out of practice counts", function()
+		local DAY = 86400000
+		local lessons = assert(kpk_content.build(kpk.shared(), dofile("content/kpk_week.lua")))
+		local cps = require("ai_edu.kpk_review").checkpoints({ solved = kpk.shared(), lessons = lessons, learner_id = "sim",
+			day_index = function(ms) return math.floor(ms / DAY) end })
+		local log, t = event_log.new(), 1790000000000
+		local app = http_app.new({ log = log, static = {}, clock = function() t = t + 1000; return t end,
+			course = course.define({ lessons = lessons, learner_id = "sim", policy_version = "p", checkpoints = cps,
+				day_index = function(ms) return math.floor(ms / DAY) end }) })
+		local function post(path, v) return cjson.decode(app:handle({ method = "POST", path = path, body = cjson.encode(v or {}) }).body) end
+		local function run_to_end()
+			local results = {}
+			while true do
+				local nx = post("/api/next")
+				if nx.done then return results end
+				local it = nx.item
+				local answer = it.response.kind == "info" and { ack = true }
+					or it.response.kind == "move" and { move = it.response.legal_moves[1] }
+					or { choice = it.response.choices[1].id }
+				results[#results + 1] = post("/api/submit", { item_id = it.id, answer = answer, modality = "tap", hint_level = 0 })
+			end
+		end
+		local function row()
+			for _, l in ipairs(post("/api/lessons").lessons) do if l.id == "checkpoint" then return l end end
+		end
+		post("/api/start", { lesson_id = "square" })
+		run_to_end()
+		assert.is_false(row().unlocked)
+		t = t + DAY
+		assert.is_true(row().unlocked)
+		post("/api/start", { lesson_id = "checkpoint" })
+		local recorded = 0
+		for _, r in ipairs(run_to_end()) do
+			if not r.ack then
+				assert.same({ recorded = true }, r)
+				recorded = recorded + 1
+			end
+		end
+		assert.equal(2, recorded)
+		assert.is_false(row().unlocked)
+		local p = assert(projection.replay(log:events()))
+		local sq = p.learners.sim.skills["kpk.square"]
+		assert.equal(2, sq.checkpoint.attempts)
+		assert.equal(5, sq.independent.attempts)
+	end)
+end)

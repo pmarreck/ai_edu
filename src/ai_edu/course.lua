@@ -9,11 +9,19 @@ local course = {}
 -- day_index(ms) -> calendar day (injected so the core never reads a time zone),
 -- reviews (optional provider): due(events, now) -> skills; plan(events, now, due) -> a
 -- serializable plan; lesson(plan) -> { id = "review", title, items }.
+-- checkpoints (optional provider): the same interface for delayed no-feedback checks; its
+-- lessons carry feedback = false (docs/plan_context/checkpoints.md).
 function course.define(opts)
 	local by_id = {}
 	for _, l in ipairs(opts.lessons) do by_id[l.id] = l end
+	local generated = {}
+	if opts.reviews then generated[#generated + 1] = { id = "review", title = "Review", provider = opts.reviews } end
+	if opts.checkpoints then generated[#generated + 1] = { id = "checkpoint", title = "Checkpoint", provider = opts.checkpoints } end
+	local generated_by_id = {}
+	for _, g in ipairs(generated) do generated_by_id[g.id] = g end
 	return { lessons = opts.lessons, by_id = by_id, learner_id = opts.learner_id,
-		policy_version = opts.policy_version, day_index = opts.day_index, reviews = opts.reviews }
+		policy_version = opts.policy_version, day_index = opts.day_index, reviews = opts.reviews,
+		generated = generated, generated_by_id = generated_by_id }
 end
 
 -- This learner's course start, per-lesson session counts, completions and latest session.
@@ -47,27 +55,28 @@ function course.status(def, events, now)
 		out[#out + 1] = { id = l.id, title = l.title, day = l.day,
 			unlocked = unlocked(def, l, h.start_ms, now), completed = h.completed[l.id] == true }
 	end
-	if def.reviews then
-		local due = def.reviews:due(events, now)
-		out[#out + 1] = { id = "review", title = "Review", day = 0, unlocked = #due > 0, completed = false, due = #due }
+	for _, g in ipairs(def.generated) do
+		local due = g.provider:due(events, now)
+		out[#out + 1] = { id = g.id, title = g.title, day = 0, unlocked = #due > 0, completed = false, due = #due }
 	end
 	return out
 end
 
 local function new_session(def, lesson, session_id)
 	return session.init({ items = lesson.items, learner_id = def.learner_id, session_id = session_id,
-		policy_version = def.policy_version, lesson_id = lesson.id })
+		policy_version = def.policy_version, lesson_id = lesson.id, feedback = lesson.feedback })
 end
 
 -- Returns a fresh session state and { session.started }, or nil plus a reason.
 function course.start(def, events, now, lesson_id)
 	local lesson, plan = def.by_id[lesson_id], nil
 	local h = history(def, events)
-	if lesson_id == "review" and def.reviews then
-		local due = def.reviews:due(events, now)
-		if #due == 0 then return nil, "nothing due for review" end
-		plan = def.reviews:plan(events, now, due)
-		lesson = def.reviews:lesson(plan)
+	local g = def.generated_by_id[lesson_id]
+	if g then
+		local due = g.provider:due(events, now)
+		if #due == 0 then return nil, "nothing due for " .. lesson_id end
+		plan = g.provider:plan(events, now, due)
+		lesson = g.provider:lesson(plan)
 	end
 	if not lesson then return nil, "unknown lesson " .. tostring(lesson_id) end
 	if not plan and not unlocked(def, lesson, h.start_ms, now) then return nil, "lesson " .. lesson_id .. " is locked" end
@@ -88,7 +97,8 @@ function course.resume(def, events)
 	local last = h.last
 	if not last or h.finished_sessions[last.session_id] then return nil end
 	local lesson = def.by_id[last.lesson_id]
-	if last.lesson_id == "review" and def.reviews and last.plan then lesson = def.reviews:lesson(last.plan) end
+	local g = def.generated_by_id[last.lesson_id]
+	if g and last.plan then lesson = g.provider:lesson(last.plan) end
 	if not lesson then return nil end
 	local st = new_session(def, lesson, last.session_id)
 	return st and session.restore(st, events)

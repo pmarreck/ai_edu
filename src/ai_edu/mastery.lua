@@ -50,7 +50,7 @@ local function outcomes(events, learner_id, skill_id, independent_only)
 	for _, e in ipairs(events) do
 		local pl = e.payload
 		if e.type == "answer.scored" and e.learner_id == learner_id and pl.skill_id == skill_id
-			and (pl.hint_level == 0 or not independent_only) then
+			and not pl.checkpoint and (pl.hint_level == 0 or not independent_only) then
 			local c = corrected[e.id]
 			if c == nil then c = pl.correct end
 			out[#out + 1] = c == true

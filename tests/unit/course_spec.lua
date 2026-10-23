@@ -143,3 +143,42 @@ describe("course reviews", function()
 		assert.matches("nothing due", err)
 	end)
 end)
+
+describe("course checkpoints", function()
+	local provider = {
+		due = function(_, events)
+			for _, e in ipairs(events) do if e.type == "lesson.completed" then return { { skill = "s", offset = 1 } } end end
+			return {}
+		end,
+		plan = function(_, _, _, due) return { due = due } end,
+		lesson = function(_, plan)
+			local it = card("cp-" .. plan.due[1].skill)
+			it.checkpoint = plan.due[1].offset
+			return { id = "checkpoint", title = "Checkpoint", feedback = false, items = { it } }
+		end,
+	}
+	local function def() return course.define({ lessons = LESSONS, learner_id = "learner", policy_version = "p",
+		day_index = function(ms) return math.floor(ms / DAY) end, checkpoints = provider }) end
+	local function row(d, log, now)
+		for _, l in ipairs(course.status(d, log:events(), now)) do if l.id == "checkpoint" then return l end end
+	end
+
+	it("offers a checkpoint row only when one is due, and starts it without feedback", function()
+		local log = event_log.new()
+		assert.is_false(row(def(), log, 100).unlocked)
+		run(log, assert(start(def(), log, 100, "L1")), 100)
+		assert.same({ id = "checkpoint", title = "Checkpoint", day = 0, unlocked = true, completed = false, due = 1 }, row(def(), log, 100))
+		local st = assert(start(def(), log, 100, "checkpoint"))
+		assert.is_false(st.feedback)
+		local resumed = assert(course.resume(def(), log:events()))
+		assert.is_false(resumed.feedback)
+		local _, _, view = session.next(resumed, 100)
+		assert.equal("cp-s", view.id)
+	end)
+
+	it("refuses a checkpoint when none is due", function()
+		local st, err = course.start(def(), {}, 100, "checkpoint")
+		assert.is_nil(st)
+		assert.matches("nothing due", err)
+	end)
+end)

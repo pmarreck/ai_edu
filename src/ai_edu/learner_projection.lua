@@ -27,8 +27,9 @@ end
 local function scored_skill(old, payload, occurred_at)
 	old = old or { independent = { attempts = 0, correct = 0 }, assisted = { attempts = 0, correct = 0 } }
 	local skill = shallow(old)
-	local which = payload.hint_level == 0 and "independent" or "assisted"
-	local bucket = shallow(old[which])
+	-- Checkpoint attempts measure delayed retention; they get their own bucket, never practice's.
+	local which = payload.checkpoint and "checkpoint" or payload.hint_level == 0 and "independent" or "assisted"
+	local bucket = shallow(old[which] or { attempts = 0, correct = 0 })
 	bucket.attempts = bucket.attempts + 1
 	if payload.correct then
 		bucket.correct = bucket.correct + 1

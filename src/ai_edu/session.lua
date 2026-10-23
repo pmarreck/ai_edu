@@ -41,7 +41,8 @@ local function make_events(st, now, specs)
 end
 
 -- opts: items, learner_id, session_id, policy_version, lesson_id (optional; finishing a lesson
--- session emits lesson.completed once). Returns a state, or nil plus the first invalid item.
+-- session emits lesson.completed once), feedback (default true; false records answers without
+-- revealing anything, for checkpoints). Returns a state, or nil plus the first invalid item.
 function session.init(opts)
 	local items, order = {}, {}
 	for _, it in ipairs(opts.items) do
@@ -52,7 +53,7 @@ function session.init(opts)
 	end
 	return {
 		items = items, order = order, learner_id = opts.learner_id, session_id = opts.session_id,
-		policy_version = opts.policy_version, lesson_id = opts.lesson_id,
+		policy_version = opts.policy_version, lesson_id = opts.lesson_id, feedback = opts.feedback ~= false,
 		answered = {}, open = {}, completed = false, counter = 0,
 	}
 end
@@ -106,9 +107,10 @@ function session.submit(st, item_id, answer, meta, now)
 			modality = meta.modality, latency_ms = now - presented_at } } }
 		for _, skill_id in ipairs(it.skill_ids) do
 			specs[#specs + 1] = { "engine", "answer.scored",
-				{ item_id = item_id, skill_id = skill_id, correct = result.correct, hint_level = h } }
+				{ item_id = item_id, skill_id = skill_id, correct = result.correct, hint_level = h,
+					checkpoint = it.checkpoint } }
 		end
-		out = { correct = result.correct, reveal = item.reveal(it, answer) }
+		out = st.feedback and { correct = result.correct, reveal = item.reveal(it, answer) } or { recorded = true }
 	end
 	local events, counter = make_events(st, now, specs)
 	local record = { ack = result.ack, answer = answer, correct = result.correct, hint_level = h, scored = {} }
@@ -125,6 +127,7 @@ end
 -- Works in both directions (wrong marked right too). Returns state, events, { upheld, correct,
 -- proof }, or nil plus a reason with no events, so the shell can fall back to a plain report.
 function session.challenge(st, item_id, note, judge, oracle, now)
+	if not st.feedback then return nil, "checkpoint answers are not revealed, so they cannot be challenged" end
 	local rec = st.answered[item_id]
 	if not rec or rec.ack or rec.correct == nil then return nil, "item " .. tostring(item_id) .. " has no scored answer" end
 	local verdict, err = judge(st.items[item_id], rec.answer)

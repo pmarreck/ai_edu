@@ -94,3 +94,15 @@ describe("scheduler corrections", function()
 		assert.equal(1, due_days(after, "sq"))
 	end)
 end)
+
+describe("scheduler and checkpoints", function()
+	it("ignores checkpoint scores: they measure retention, they are not practice", function()
+		local events = log_of({ { 0, "S1", { { "sq", true }, { "sq", true } } } })
+		local before = scheduler.replay(events)
+		events[#events + 1] = { seq = #events + 1, id = "C1:1", type = "answer.submitted", learner_id = "L", occurred_at = T0 + DAY,
+			payload = { item_id = "c", session_id = "C1" } }
+		events[#events + 1] = { seq = #events + 1, id = "C1:2", type = "answer.scored", learner_id = "L", occurred_at = T0 + DAY,
+			payload = { item_id = "c", skill_id = "sq", correct = false, hint_level = 0, checkpoint = 1 } }
+		assert.same(before, scheduler.replay(events))
+	end)
+end)

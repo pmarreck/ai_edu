@@ -140,3 +140,15 @@ describe("learner_projection corrections", function()
 		assert.matches("no scored attempt", err)
 	end)
 end)
+
+describe("learner_projection checkpoints", function()
+	it("counts checkpoint attempts in their own bucket, never as independent practice", function()
+		local e = fx.event({ id = "cp", actor = "engine", type = "answer.scored", occurred_at = 500,
+			payload = { item_id = "c", skill_id = "carrying", correct = true, hint_level = 0, checkpoint = 7 } })
+		local p = projection.replay(logged({ scored("a", 100, "carrying", false, 0), e }))
+		local s = p.learners.L1.skills.carrying
+		assert.same({ attempts = 1, correct = 0 }, s.independent)
+		assert.same({ attempts = 1, correct = 1 }, s.checkpoint)
+		assert.is_nil(s.last_independent_success_at)
+	end)
+end)

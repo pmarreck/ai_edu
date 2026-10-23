@@ -73,3 +73,36 @@ describe("kpk_review provider", function()
 		for _, it in ipairs(a.items) do assert.is_true(item.validate(it), it.id) end
 	end)
 end)
+
+describe("kpk checkpoint provider", function()
+	local function cp() return kpk_review.checkpoints({ solved = solved, lessons = lessons, learner_id = "learner", day_index = day_index }) end
+
+	it("is due a day after first practice, with the offset", function()
+		assert.same({}, cp():due(log_day0(), T0))
+		assert.same({ { skill = "kpk.opposition", offset = 1 }, { skill = "kpk.square", offset = 1 } }, cp():due(log_day0(), T0 + DAY))
+	end)
+
+	it("builds a no-feedback lesson of fresh verified positions tagged with their checkpoint", function()
+		local p = cp()
+		local now = T0 + 7 * DAY
+		local due = p:due(log_day0(), now)
+		assert.equal(7, due[1].offset)
+		local plan = p:plan(log_day0(), now, due)
+		local lesson = p:lesson(plan)
+		assert.equal("checkpoint", lesson.id)
+		assert.is_false(lesson.feedback)
+		local scored, keys = 0, {}
+		for _, it in ipairs(lesson.items) do
+			assert.is_true(item.validate(it), it.id)
+			if it.response.kind ~= "info" then
+				scored = scored + 1
+				assert.equal(7, it.checkpoint)
+				local key = kpk_gen.position_key(it.prompt.board)
+				assert.is_nil(keys[key])
+				keys[key] = true
+			end
+		end
+		assert.equal(4, scored)
+		assert.same(lesson, p:lesson(plan))
+	end)
+end)

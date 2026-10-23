@@ -46,3 +46,4 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Recently done] File-backed NDJSON log adapter (src/ai_edu/log_file.lua); SQLite dropped as unneeded (done 2026-09-30, reconciled 2026-10-14)
 - [x] [Recently done] Bold refactor: session and course are pure transitions; http_app is the imperative shell (done 2026-09-30 15:51 EDT)
 - [x] [Recently done] Published as public github.com/pmarreck/ai_edu after removing private details (done 2026-10-09 17:07 EDT)
+- [x] [Recently done] Reading jump-start ideas proposed with evidence review (done 2026-09-28, reconciled 2026-10-14)

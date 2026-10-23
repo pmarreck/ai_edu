@@ -97,3 +97,12 @@ describe("mastery.estimate (BKT)", function()
 		assert.truthy(mastery.estimate({}, "L", "s", {}))
 	end)
 end)
+
+describe("mastery and checkpoints", function()
+	it("leaves checkpoint scores out of the estimate so they can validate it", function()
+		local events = scored({ { true } })
+		events[2] = { seq = 2, id = "c", type = "answer.scored", learner_id = "L", occurred_at = 2,
+			payload = { item_id = "c", skill_id = "s", correct = false, hint_level = 0, checkpoint = 7 } }
+		assert.equal(p(scored({ { true } })), p(events))
+	end)
+end)

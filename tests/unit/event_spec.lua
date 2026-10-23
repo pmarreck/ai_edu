@@ -162,3 +162,14 @@ describe("event.validate challenge settlement payloads", function()
 		assert.same(expected, got)
 	end)
 end)
+
+describe("event.validate answer.scored checkpoint tag", function()
+	it("accepts only positive whole-day checkpoint offsets", function()
+		local function with(c)
+			return event.validate(valid_event({ actor = "engine", type = "answer.scored",
+				payload = { item_id = "i", skill_id = "s", correct = true, hint_level = 0, checkpoint = c } })) == true
+		end
+		assert.same({ true, true, true, false, false, false, false },
+			{ with(nil), with(1), with(30), with(0), with(-7), with(1.5), with("7") })
+	end)
+end)

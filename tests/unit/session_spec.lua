@@ -253,3 +253,35 @@ describe("session.challenge", function()
 		assert.equal("S1:7", events[1].id)
 	end)
 end)
+
+describe("session without feedback (checkpoints)", function()
+	local function checkpoint_init()
+		local items = bank()
+		items[1].checkpoint = 7
+		return assert(session.init({ items = items, learner_id = "L1", session_id = "C1",
+			policy_version = "pedagogy-priors/2", feedback = false }))
+	end
+
+	it("records and scores an answer but reveals nothing, tagging the score with its checkpoint", function()
+		local st = session.present(checkpoint_init(), "b-sound", 1)
+		local _, events, out = session.submit(st, "b-sound", { choice = "d" }, TAP, 2)
+		assert.same({ recorded = true }, out)
+		assert.same({ item_id = "b-sound", skill_id = "letters.b", correct = false, hint_level = 0, checkpoint = 7 },
+			events[2].payload)
+	end)
+
+	it("refuses challenges, since nothing was revealed to challenge", function()
+		local st = session.present(checkpoint_init(), "b-sound", 1)
+		local st2 = session.submit(st, "b-sound", { choice = "d" }, TAP, 2)
+		local function judge() return { correct = true, proof = "p" } end
+		local ok, err = session.challenge(st2, "b-sound", "", judge, { name = "o" }, 3)
+		assert.is_nil(ok)
+		assert.matches("checkpoint", err)
+	end)
+
+	it("leaves untagged items untagged", function()
+		local st = session.present(checkpoint_init(), "legs", 1)
+		local _, events = session.submit(st, "legs", { text = "8" }, TAP, 2)
+		assert.is_nil(events[2].payload.checkpoint)
+	end)
+end)

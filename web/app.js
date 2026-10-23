@@ -9,7 +9,7 @@ const FILES = "abcdefgh";
 const main = document.getElementById("main");
 const progress = document.getElementById("progress");
 const footer = document.getElementById("footer");
-const state = { item: null, answered: 0, correct: 0, scored: 0 };
+const state = { item: null, answered: 0, correct: 0, scored: 0, recorded: 0 };
 
 function el(tag, attrs = {}, children = []) {
 	const node = document.createElement(tag);
@@ -108,7 +108,8 @@ async function showLessons() {
 		const { lessons, in_progress } = await api("/api/lessons");
 		const list = el("div", { class: "lessons" });
 		for (const l of lessons) {
-			const badge = l.id === "review" ? el("span", { class: "badge" + (l.due ? "" : " done"), text: l.due ? "Due" : "Clear" })
+			const generated = l.id === "review" || l.id === "checkpoint";
+			const badge = generated ? el("span", { class: "badge" + (l.due ? "" : " done"), text: l.due ? "Due" : "Clear" })
 				: l.completed ? el("span", { class: "badge done", text: "Done" })
 				: l.unlocked ? el("span", { class: "badge", text: "Open" })
 				: el("span", { class: "badge", text: "Day " + (l.day + 1) });
@@ -118,6 +119,7 @@ async function showLessons() {
 				el("span", {}, [el("div", { class: "title", text: l.title }),
 					el("div", { class: "meta", text: resuming ? "In progress: tap to resume"
 						: isReview ? (l.due ? `${l.due} idea${l.due === 1 ? "" : "s"} due for review, with fresh positions` : "Nothing due right now")
+						: l.id === "checkpoint" ? (l.due ? "A short unmarked check of what you remember" : "Nothing due right now")
 						: l.unlocked ? (l.completed ? "Practice again any time" : "Ready") : "Unlocks on day " + (l.day + 1) })]),
 				badge,
 			]);
@@ -140,7 +142,7 @@ async function resumeLesson() {
 async function startLesson(id) {
 	try {
 		await api("/api/start", { lesson_id: id });
-		Object.assign(state, { answered: 0, correct: 0, scored: 0 });
+		Object.assign(state, { answered: 0, correct: 0, scored: 0, recorded: 0 });
 		footer.hidden = false;
 		await nextItem();
 	} catch (err) { fail(err); }
@@ -208,6 +210,7 @@ function renderItem(item) {
 async function submit(answer, modality, rendered, card) {
 	try {
 		const res = await api("/api/submit", { item_id: state.item.id, answer, modality, hint_level: 0 });
+		if (res.recorded) return showRecorded(card);
 		state.scored += 1;
 		if (res.correct) state.correct += 1;
 		showFeedback(res, answer, rendered, card);
@@ -238,8 +241,24 @@ function showFeedback(res, answer, rendered, card) {
 	progress.textContent = progressText();
 }
 
+// Checkpoint answers are recorded without marking, so nothing about correctness is shown.
+function showRecorded(card) {
+	state.recorded += 1;
+	state.answeredCard = null;
+	card.append(el("div", { class: "feedback neutral" }, [el("strong", { text: "Recorded." })]));
+	card.append(el("button", { class: "primary", text: "Next", onclick: nextItem }));
+	progress.textContent = progressText();
+}
+
 function showDone() {
 	footer.hidden = true;
+	if (state.recorded && !state.scored) {
+		return show(el("div", { class: "card" }, [
+			el("h2", { text: "Checkpoint recorded" }),
+			el("p", { class: "lead", text: `${state.recorded} answer${state.recorded === 1 ? "" : "s"} recorded. Checkpoints are not marked here; they measure what stays with you over time.` }),
+			el("button", { class: "primary", text: "Back to lessons", onclick: showLessons }),
+		]));
+	}
 	show(el("div", { class: "card" }, [
 		el("h2", { text: "Lesson complete" }),
 		el("div", { class: "summary", text: `${state.correct} / ${state.scored}` }),

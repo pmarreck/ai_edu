@@ -53,7 +53,14 @@ local function score_error(p)
 end
 
 local PAYLOAD_CHECKS = {
-	["answer.scored"] = score_error,
+	["answer.scored"] = function(p)
+		local err = score_error(p)
+		if err then return err end
+		local c = p.checkpoint
+		if c ~= nil and (type(c) ~= "number" or c < 1 or c ~= math.floor(c)) then
+			return "payload.checkpoint must be a positive whole number of days"
+		end
+	end,
 	-- An upheld challenge reverses one earlier answer.scored event, named by its id.
 	["answer.corrected"] = function(p)
 		local err = score_error(p)
