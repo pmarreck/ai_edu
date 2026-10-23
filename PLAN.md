@@ -24,10 +24,10 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 
 - [ ] Conform to the cross-platform project build convention: ./build, ./run, PF naming, declared platform matrix (context: docs/plan_context/build_arch_conformance.md)
 - [ ] Encode the evidence table as versioned policy data (evidence-policy/1) that lesson policies must cite
-- [x] Hide event_log internals behind closures; entries and the id index are unreachable by field access (done 2026-10-23 14:30 EDT)
+- [x] Hide event_log internals behind closures; entries and the id index are unreachable by field access (done 2026-10-23 14:22 EDT, b3f33b3)
 - [ ] Tamper evidence for persisted logs (hash chain over canonical lines)
-- [x] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids) and the king-and-pawn graph (done 2026-10-23 14:40 EDT)
-- [ ] mastery-estimate/1: versioned BKT estimator recomputed from events, independent-only by default
+- [x] curriculum-node/1 graph with prerequisite validation (cycles, dangling ids) and the king-and-pawn graph (done 2026-10-23 14:24 EDT, 150b2ff)
+- [x] mastery-estimate/1: versioned BKT estimator recomputed from events, independent-only by default, corrections applied (done 2026-10-23 14:26 EDT)
 - [ ] Model gateway + role-call/1 envelope; role outputs become proposal events only
 - [ ] Sandbox runner for generated LuaJIT activities (restricted env, instruction hooks, OS limits, no network)
 - [ ] Privacy, sandbox and learner-facing failure controls before testing with other learners or generated activities

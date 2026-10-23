@@ -16,7 +16,7 @@ thin client ──► learning server (LuaJIT)
                  ├─ event log            (implemented: append-only, validated)
                  ├─ projections          (implemented: learner-projection/1 via replay)
                  ├─ curriculum graph     (implemented: prerequisite DAG validation and order)
-                 ├─ mastery estimator    (contract only; BKT candidate)
+                 ├─ mastery estimator    (implemented: bkt@1, recomputed from events)
                  ├─ scheduler            (contract only)
                  ├─ lesson state machine (contract only)
                  ├─ artifact library + sandbox runner (contract only)
@@ -36,7 +36,7 @@ Each record carries a `schema` string. A version bump is required for any field 
 - `event/1` (implemented, `src/ai_edu/event.lua`): `schema`, `id` (caller-unique string), `type`, `actor`, `learner_id`, `occurred_at` (integer ms since epoch, injected), `payload` (table), `provenance` (`policy_version` required; `model`, `prompt_version`, `artifact_version` optional). The log assigns `seq`.
 - `learner-projection/1` (implemented, `src/ai_edu/learner_projection.lua`): per learner, per skill: independent and assisted attempt/correct counts, `last_independent_success_at`, `last_seq`. Deliberately no mastery probability yet; that belongs to a versioned estimator.
 - `curriculum-node/1` (implemented, `src/ai_edu/curriculum.lua`; king-and-pawn graph in `content/kpk_curriculum.lua`): `id`, `title`, `prerequisites` (ids), `related` (ids), `objective`, `age_range`, `sources` (provenance).
-- `mastery-estimate/1` (sketch): `skill_id`, `estimator` (`name@version` + params), `p_mastery`, `interval` (uncertainty), `evidence_count`, `independent_only` (bool), computed from events, never stored as truth.
+- `mastery-estimate/1` (implemented, `src/ai_edu/mastery.lua`, estimator `bkt@1`; `interval` is a slip/guess sensitivity band, not a credible interval): `skill_id`, `estimator` (`name@version` + params), `p_mastery`, `interval` (uncertainty), `evidence_count`, `independent_only` (bool), computed from events, never stored as truth.
 - `lesson-plan/1` (sketch): lesson graph of typed nodes and edges (section 9.1), `objective`, `evidence_sought`, `expected_misconceptions`, `techniques`, `modality`, `estimated_minutes`, `fallbacks`, `transfer_check`, `break_policy`, `needs_code`, `experiment_arm`.
 - `artifact/1` (sketch): content hash, metadata of section 13, `test_suite` hash, `sandbox_limits`, `validation` record, `generator` provenance, fallback ladder.
 - `role-call/1` (sketch): model gateway request/response envelope: `role`, `input_schema`, `output_schema`, `model`, `prompt_version`, raw output, parsed output, parse errors. Role outputs become proposal events only.
