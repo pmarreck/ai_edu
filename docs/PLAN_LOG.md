@@ -49,3 +49,4 @@ Completed PLAN.md items retired by plan-retire, oldest retirement first.
 - [x] [Recently done] Reading jump-start ideas proposed with evidence review (done 2026-09-28, reconciled 2026-10-14)
 - [x] [Recently done] First cohort, subject and deployment chosen: BDFN self-dogfood, king-and-pawn endgames, private network (done 2026-09-28, reconciled 2026-10-14)
 - [x] [Now] Add Mechatron Prime CI (the project's continuous-integration service) for the flake check, with README badge (done 2026-10-14 14:32 EDT)
+- [x] [Now] Challenges settled by the solver, never the stored key: upheld = answer.corrected per score plus challenge.settled{upheld} for the scrutiny axis to credit; rejected = proof shown, no penalty (done 2026-10-14 14:45 EDT)

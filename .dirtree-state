@@ -20,6 +20,7 @@ annotate=[
 	docs/plan_context/counterfeit_scrutiny.md = Design: disclosed variable-rate planted errors, Prove-it vs error claims, scrutiny axis
 	docs/plan_context/handwriting_capture.md = Design notes: finger-written letter capture on iOS web page, $P recognizer scoring, parent-as-oracle control
 	docs/plan_context/history_images.md = Design notes: image provenance labels, open archives, AI-image accuracy and labeling rules
+	docs/plan_context/shelved_2026-10-23.md = Shelving state, restart steps, what each open item waits on
 	docs/plan_context/spoken_audio.md = Design notes: pre-rendered, approved TTS clips for pre-readers; phoneme-audio risk; engine options
 	docs/plan_context/timed_items.md = Design notes: optional item timing, timeout outcomes, fluency vs accuracy
 	docs/policy/DIVERGENCES.md = Record of design choices that depart from tradition or evidence, each with justification and measurement

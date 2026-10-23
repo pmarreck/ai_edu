@@ -1,20 +1,20 @@
 # PLAN
 
+Shelved 2026-10-23; state, restart steps and what each open item waits on: docs/plan_context/shelved_2026-10-23.md.
 Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidence/. Experiments vs tradition and evidence: docs/policy/DIVERGENCES.md. Completed items: docs/PLAN_LOG.md.
 
 ## Now
 
+- [ ] On return: restart the dogfood server, take the due reviews and checkpoints, and look over the challenge ruling and checkpoint screens (context: docs/plan_context/shelved_2026-10-23.md)
 - [x] Unseen, no-feedback checkpoints at 1/7/30 days, separate from practice (done 2026-10-23 14:41 EDT, 68bac9b) (context: docs/plan_context/checkpoints.md)
-
-- [x] Challenges settled by the solver, never the stored key: upheld = answer.corrected per score plus challenge.settled{upheld} for the scrutiny axis to credit; rejected = proof shown, no penalty (done 2026-10-14 14:45 EDT)
-
+- [x] Stopped the dogfood server and removed its private-network mapping for shelving (done 2026-10-23 14:20 EDT)
 
 ## Next: king-and-pawn dogfood
 
 - [ ] Counterfeits and scrutiny axis, design agreed 2026-09-30 (context: docs/plan_context/counterfeit_scrutiny.md)
 - [ ] Misconception loop: deterministic signals + evaluator AI propose (misconception.proposed), engine confirms via diagnostic items or a short learner dialog, confirmed ones steer reviews
 - [ ] "Try it": play your own idea against the solver on the board (no AI needed; works for the child)
-- [x] FSRS-6 model (matches ts-fsrs) plus moving-average baseline, scored by log loss on cross-day attempts; verdict withheld below 30 predictions each (done 2026-10-23 14:48 EDT)
+- [x] FSRS-6 model (matches ts-fsrs) plus moving-average baseline, scored by log loss on cross-day attempts; verdict withheld below 30 predictions each (done 2026-10-23 14:46 EDT, 9d532de)
 - [ ] Swap the review scheduler to the better model once memory_models.compare has enough data (3 cross-day predictions as of 2026-10-23)
 - [ ] Challenges on wording or facts: verifier model proposes a ruling, BDFN confirms; no credit granted by a model alone
 - [ ] "Talk it over" tutor panel grounded in solver facts: typed for BDFN first; cannot change scores
@@ -47,5 +47,4 @@ Architecture and contracts: docs/ARCHITECTURE.md. Evidence reviews: docs/evidenc
 - [ ] Pre-rendered, approved, content-addressed spoken instructions (context: docs/plan_context/spoken_audio.md)
 - [ ] Spoken tutor panel for the child, after reading and audio decisions
 
-## Recently done
 
